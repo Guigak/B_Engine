@@ -1,4 +1,7 @@
 #pragma once
+
+#include "Timer.h"
+
 class CFramework
 {
 private :
@@ -48,6 +51,11 @@ private :
 	// Viewport, ScissorRect
 	D3D12_VIEWPORT m_d3d_Viewport;
 	D3D12_RECT m_d3d_ScissoerRect;
+
+	// Timer
+	CTimer m_Timer;
+
+	_TCHAR m_pcFrameRate[50];
 
 public :
 	CFramework();

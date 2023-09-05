@@ -30,6 +30,8 @@ CFramework::CFramework() {
 
 	m_nWndClient_Width = FRAME_BUFFER_WIDTH;
 	m_nWndClient_Height = FRAME_BUFFER_HEIGHT;
+
+	_tcscpy_s(m_pcFrameRate, _T("B_Engine ("));
 }
 
 CFramework::~CFramework() {
@@ -298,6 +300,8 @@ void CFramework::Anim_Objects() {
 }
 
 void CFramework::Adavance_Frame() {
+	m_Timer.Tick(0.0f);
+
 	Prcs_Input();
 	Anim_Objects();
 
@@ -350,6 +354,9 @@ void CFramework::Adavance_Frame() {
 	m_pdxgi_SwapChain->Present1(1, 0, &dxgi_Present_Parameters);
 
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
+
+	m_Timer.Get_FrameRate(m_pcFrameRate + 10, 37);
+	::SetWindowText(m_hWnd, m_pcFrameRate);
 }
 
 void CFramework::Wait_4_GPU_Complete() {

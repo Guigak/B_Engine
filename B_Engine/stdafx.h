@@ -14,6 +14,11 @@
 #include <memory.h>
 #include <tchar.h>
 
+// Timer 관련
+#include <Mmsystem.h>
+
+#pragma comment(lib, "winmm.lib");
+
 // Direct3D 관련 headers
 #include <string>
 #include <wrl.h>
