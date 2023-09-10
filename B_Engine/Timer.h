@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdafx.h"
+
 const ULONG MAX_SAMPLE_COUNT = 50;
 
 class CTimer {

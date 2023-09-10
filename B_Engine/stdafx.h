@@ -14,10 +14,13 @@
 #include <memory.h>
 #include <tchar.h>
 
+// io
+#include <iostream>
+
 // Timer 관련
 #include <Mmsystem.h>
 
-#pragma comment(lib, "winmm.lib");
+#pragma comment(lib, "winmm.lib")
 
 // Direct3D 관련 headers
 #include <string>
@@ -42,11 +45,11 @@
 using Microsoft::WRL::ComPtr;
 
 // import library 추가
-#pragma comment(lib, "d3dcompiler.lib");
-#pragma comment(lib, "d3d12.lib");
-#pragma comment(lib, "dxgi.lib");
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
 
-#pragma comment(lib, "dxguid.lib");
+#pragma comment(lib, "dxguid.lib")
 
 // client rect size
 #define FRAME_BUFFER_WIDTH	800

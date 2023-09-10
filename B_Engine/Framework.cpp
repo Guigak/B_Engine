@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "Framework.h"
 
 CFramework::CFramework() {
@@ -26,7 +25,14 @@ CFramework::CFramework() {
 
 	m_hFence_Event = NULL;
 	m_pd3d_Fence = NULL;
-	m_nFence_Value = 0;
+	for (int i = 0; i < m_nSwapChainBuffers; ++i) {
+		m_pnFence_Value[i] = 0;
+	}
+
+	m_pScene = NULL;
+
+	m_d3d_Viewport = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f };
+	m_d3d_ScissoerRect = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT };
 
 	m_nWndClient_Width = FRAME_BUFFER_WIDTH;
 	m_nWndClient_Height = FRAME_BUFFER_HEIGHT;
@@ -206,7 +212,9 @@ void CFramework::Crt_D3D_Device() {
 	m_bMSAA4x_Enable = (m_nMSAA4x_QualityLevels > 1) ? true : false;
 
 	hResult = m_pd3d_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_pd3d_Fence);
-	m_nFence_Value = 0;
+	for (int i = 0; i < m_nSwapChainBuffers; ++i) {
+		m_pnFence_Value[i] = 0;
+	}
 
 	m_hFence_Event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
@@ -298,15 +306,28 @@ void CFramework::Crt_Dsv() {
 }
 
 void CFramework::Build_Objects() {
+	m_pScene = new CScene();
+	if (m_pScene) {
+		m_pScene->Build_Objects(m_pd3d_Device);
+	}
+
+	m_Timer.Reset();
 }
 
 void CFramework::Release_Objects() {
+	if (m_pScene) {
+		m_pScene->Release_Objects();
+		delete m_pScene;
+	}
 }
 
 void CFramework::Prcs_Input() {
 }
 
 void CFramework::Anim_Objects() {
+	if (m_pScene) {
+		m_pScene->Anim_Objects(m_Timer.Get_Elapsed_Time());
+	}
 }
 
 void CFramework::Adavance_Frame() {
@@ -318,6 +339,9 @@ void CFramework::Adavance_Frame() {
 	HRESULT hResult = m_pd3d_Command_Allocator->Reset();
 	hResult = m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
 
+	m_pd3d_Command_List->RSSetViewports(1, &m_d3d_Viewport);
+	m_pd3d_Command_List->RSSetScissorRects(1, &m_d3d_ScissoerRect);
+
 	D3D12_RESOURCE_BARRIER d3d_ResourceBarrier;
 	ZeroMemory(&d3d_ResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
 	d3d_ResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -327,9 +351,6 @@ void CFramework::Adavance_Frame() {
 	d3d_ResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3d_ResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	m_pd3d_Command_List->ResourceBarrier(1, &d3d_ResourceBarrier);
-
-	m_pd3d_Command_List->RSSetViewports(1, &m_d3d_Viewport);
-	m_pd3d_Command_List->RSSetScissorRects(1, &m_d3d_ScissoerRect);
 
 	D3D12_CPU_DESCRIPTOR_HANDLE d3d_Rtv_CPU_Descriptor_Handle = m_pd3d_Rtv_DescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	d3d_Rtv_CPU_Descriptor_Handle.ptr += (m_nSwapChainBuffer_Index * m_nRtv_Descriptor_IncrementSize);
@@ -342,7 +363,10 @@ void CFramework::Adavance_Frame() {
 
 	m_pd3d_Command_List->OMSetRenderTargets(1, &d3d_Rtv_CPU_Descriptor_Handle, TRUE, &d3d_Dsv_CPU_Descriptor_Handle);
 
-	//
+	// render
+	if (m_pScene) {
+		m_pScene->Render(m_pd3d_Command_List);
+	}
 
 	d3d_ResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	d3d_ResourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
@@ -356,27 +380,20 @@ void CFramework::Adavance_Frame() {
 
 	Wait_4_GPU_Complete();
 
-	DXGI_PRESENT_PARAMETERS dxgi_Present_Parameters;
-	dxgi_Present_Parameters.DirtyRectsCount = 0;
-	dxgi_Present_Parameters.pDirtyRects = NULL;
-	dxgi_Present_Parameters.pScrollRect = NULL;
-	dxgi_Present_Parameters.pScrollOffset = NULL;
-	m_pdxgi_SwapChain->Present1(1, 0, &dxgi_Present_Parameters);
+	m_pdxgi_SwapChain->Present(0, 0);
 
-	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
+	Move_2_Next_Frame();
 
 	m_Timer.Get_FrameRate(m_pcFrameRate + 10, 37);
 	SetWindowText(m_hWnd, m_pcFrameRate);
 }
 
 void CFramework::Wait_4_GPU_Complete() {
-	++m_nFence_Value;
+	UINT64 nFence_Value = ++m_pnFence_Value[m_nSwapChainBuffer_Index];
+	HRESULT hResult = m_pd3d_Command_Queue->Signal(m_pd3d_Fence, nFence_Value);
 
-	const UINT64 nFence = m_nFence_Value;
-	HRESULT hResult = m_pd3d_Command_Queue->Signal(m_pd3d_Fence, nFence);
-
-	if (m_pd3d_Fence->GetCompletedValue() < nFence) {
-		hResult = m_pd3d_Fence->SetEventOnCompletion(nFence, m_hFence_Event);
+	if (m_pd3d_Fence->GetCompletedValue() < nFence_Value) {
+		hResult = m_pd3d_Fence->SetEventOnCompletion(nFence_Value, m_hFence_Event);
 		WaitForSingleObject(m_hFence_Event, INFINITE);
 	}
 }
@@ -471,4 +488,10 @@ void CFramework::Chg_SwapChain_State() {
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
 
 	Crt_Rtv();
+}
+
+void CFramework::Move_2_Next_Frame() {
+	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
+
+	Wait_4_GPU_Complete();
 }

@@ -1,9 +1,7 @@
 ﻿// B_Engine.cpp : 애플리케이션에 대한 진입점을 정의합니다.
 //
 
-#include "stdafx.h"
 #include "B_Engine.h"
-#include "Framework.h"
 
 #define MAX_LOADSTRING 100
 

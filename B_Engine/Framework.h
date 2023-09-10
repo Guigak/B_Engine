@@ -1,9 +1,10 @@
 #pragma once
 
+#include "stdafx.h"
 #include "Timer.h"
+#include "Scene.h"
 
-class CFramework
-{
+class CFramework {
 private :
 	// Window
 	HINSTANCE m_hInstance;
@@ -45,7 +46,7 @@ private :
 
 	// Fence
 	ID3D12Fence* m_pd3d_Fence;
-	UINT64 m_nFence_Value;
+	UINT64 m_pnFence_Value[m_nSwapChainBuffers];
 	HANDLE m_hFence_Event;
 
 	// Viewport, ScissorRect
@@ -56,6 +57,9 @@ private :
 	CTimer m_Timer;
 
 	_TCHAR m_pcFrameRate[50];
+
+	// Scene
+	CScene* m_pScene;
 
 public :
 	CFramework();
@@ -89,5 +93,9 @@ public :
 	// full screen
 public :
 	void Chg_SwapChain_State();
+
+	// about Scene
+public :
+	void Move_2_Next_Frame();
 };
 
