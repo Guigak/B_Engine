@@ -85,5 +85,9 @@ public :
 	void Prcs_Msg_Keyboard(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARAM lParam);
 
 	LRESULT CALLBACK Prcs_Msg_Wnd(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARAM lParam);
+
+	// full screen
+public :
+	void Chg_SwapChain_State();
 };
 

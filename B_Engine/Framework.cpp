@@ -44,9 +44,8 @@ bool CFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 
 	Crt_D3D_Device();
 	Crt_Command_Queue_N_List();
-	Crt_SwapChain();
 	Crt_Rtv_N_Dsv_DescriptorHeaps();
-	Crt_Rtv();
+	Crt_SwapChain();
 	Crt_Dsv();
 
 	Build_Objects();
@@ -59,7 +58,7 @@ void CFramework::OnDestroy() {
 
 	Release_Objects();
 
-	::CloseHandle(m_hFence_Event);
+	CloseHandle(m_hFence_Event);
 
 	for (int i = 0; i < m_nSwapChainBuffers; ++i) {
 		if (m_ppd3d_RenderTargetBuffers[i]) {
@@ -116,37 +115,48 @@ void CFramework::OnDestroy() {
 
 void CFramework::Crt_SwapChain() {
 	RECT rcClient;
-	::GetClientRect(m_hWnd, &rcClient);
+	GetClientRect(m_hWnd, &rcClient);
 	m_nWndClient_Width = rcClient.right - rcClient.left;
 	m_nWndClient_Height = rcClient.bottom - rcClient.top;
 
-	DXGI_SWAP_CHAIN_DESC1 dxgi_SwapChain_Desc;
-	::ZeroMemory(&dxgi_SwapChain_Desc, sizeof(DXGI_SWAP_CHAIN_DESC1));
-	dxgi_SwapChain_Desc.Width = m_nWndClient_Width;
-	dxgi_SwapChain_Desc.Height = m_nWndClient_Height;
-	dxgi_SwapChain_Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	DXGI_SWAP_CHAIN_DESC dxgi_SwapChain_Desc;
+	ZeroMemory(&dxgi_SwapChain_Desc, sizeof(DXGI_SWAP_CHAIN_DESC));
+	dxgi_SwapChain_Desc.BufferCount = m_nSwapChainBuffers;
+	dxgi_SwapChain_Desc.BufferDesc.Width = m_nWndClient_Width;
+	dxgi_SwapChain_Desc.BufferDesc.Height = m_nWndClient_Height;
+	dxgi_SwapChain_Desc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	dxgi_SwapChain_Desc.BufferDesc.RefreshRate.Numerator = 60;
+	dxgi_SwapChain_Desc.BufferDesc.RefreshRate.Denominator = 1;
+	dxgi_SwapChain_Desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	dxgi_SwapChain_Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+	dxgi_SwapChain_Desc.OutputWindow = m_hWnd;
 	dxgi_SwapChain_Desc.SampleDesc.Count = (m_bMSAA4x_Enable) ? 4 : 1;
 	dxgi_SwapChain_Desc.SampleDesc.Quality = (m_bMSAA4x_Enable) ? (m_nMSAA4x_QualityLevels - 1) : 0;
-	dxgi_SwapChain_Desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	dxgi_SwapChain_Desc.BufferCount = m_nSwapChainBuffers;
-	dxgi_SwapChain_Desc.Scaling = DXGI_SCALING_NONE;
-	dxgi_SwapChain_Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	dxgi_SwapChain_Desc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED;
-	dxgi_SwapChain_Desc.Flags = 0;
+	dxgi_SwapChain_Desc.Windowed = TRUE;
+	dxgi_SwapChain_Desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-	DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgi_SwapChain_FullScreen_Desc;
-	::ZeroMemory(&dxgi_SwapChain_FullScreen_Desc, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
-	dxgi_SwapChain_FullScreen_Desc.RefreshRate.Numerator = 60;
-	dxgi_SwapChain_FullScreen_Desc.RefreshRate.Denominator = 1;
-	dxgi_SwapChain_FullScreen_Desc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	dxgi_SwapChain_FullScreen_Desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	dxgi_SwapChain_FullScreen_Desc.Windowed = TRUE;
-
-	m_pdxgi_Factory->CreateSwapChainForHwnd(m_pd3d_Command_Queue, m_hWnd, &dxgi_SwapChain_Desc, &dxgi_SwapChain_FullScreen_Desc, NULL, (IDXGISwapChain1**)&m_pdxgi_SwapChain);
-
-	m_pdxgi_Factory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
-
+	HRESULT hResult = m_pdxgi_Factory->CreateSwapChain(m_pd3d_Command_Queue, &dxgi_SwapChain_Desc, (IDXGISwapChain**)&m_pdxgi_SwapChain);
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
+
+	hResult = m_pdxgi_Factory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
+
+#ifndef _WITH_SWAPCHAIN_FULLSCREEN_STATE
+	Crt_Rtv();
+#endif
+
+	//DXGI_SWAP_CHAIN_FULLSCREEN_DESC dxgi_SwapChain_FullScreen_Desc;
+	//ZeroMemory(&dxgi_SwapChain_FullScreen_Desc, sizeof(DXGI_SWAP_CHAIN_FULLSCREEN_DESC));
+	//dxgi_SwapChain_FullScreen_Desc.RefreshRate.Numerator = 60;
+	//dxgi_SwapChain_FullScreen_Desc.RefreshRate.Denominator = 1;
+	//dxgi_SwapChain_FullScreen_Desc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	//dxgi_SwapChain_FullScreen_Desc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	//dxgi_SwapChain_FullScreen_Desc.Windowed = TRUE;
+
+	//m_pdxgi_Factory->CreateSwapChainForHwnd(m_pd3d_Command_Queue, m_hWnd, &dxgi_SwapChain_Desc, &dxgi_SwapChain_FullScreen_Desc, NULL, (IDXGISwapChain1**)&m_pdxgi_SwapChain);
+
+	//m_pdxgi_Factory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
+
+	//m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
 }
 
 void CFramework::Crt_D3D_Device() {
@@ -165,7 +175,7 @@ void CFramework::Crt_D3D_Device() {
 	ndxgi_Factory_Flags |= DXGI_CREATE_FACTORY_DEBUG;
 #endif
 
-	hResult = ::CreateDXGIFactory2(ndxgi_Factory_Flags, __uuidof(IDXGIFactory4), (void**)&m_pdxgi_Factory);
+	hResult = CreateDXGIFactory2(ndxgi_Factory_Flags, __uuidof(IDXGIFactory4), (void**)&m_pdxgi_Factory);
 
 	IDXGIAdapter1* pd3d_Adapter = NULL;
 
@@ -198,7 +208,7 @@ void CFramework::Crt_D3D_Device() {
 	hResult = m_pd3d_Device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_pd3d_Fence);
 	m_nFence_Value = 0;
 
-	m_hFence_Event = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hFence_Event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
 	m_d3d_Viewport.TopLeftX = 0;
 	m_d3d_Viewport.TopLeftY = 0;
@@ -216,7 +226,7 @@ void CFramework::Crt_D3D_Device() {
 
 void CFramework::Crt_Command_Queue_N_List() {
 	D3D12_COMMAND_QUEUE_DESC d3d_Command_Queue_Desc;
-	::ZeroMemory(&d3d_Command_Queue_Desc, sizeof(D3D12_COMMAND_QUEUE_DESC));
+	ZeroMemory(&d3d_Command_Queue_Desc, sizeof(D3D12_COMMAND_QUEUE_DESC));
 	d3d_Command_Queue_Desc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
 	d3d_Command_Queue_Desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	HRESULT hResult = m_pd3d_Device->CreateCommandQueue(&d3d_Command_Queue_Desc, __uuidof(ID3D12CommandQueue), (void**)&m_pd3d_Command_Queue);
@@ -230,7 +240,7 @@ void CFramework::Crt_Command_Queue_N_List() {
 
 void CFramework::Crt_Rtv_N_Dsv_DescriptorHeaps() {
 	D3D12_DESCRIPTOR_HEAP_DESC d3d_DescriptorHeap_Desc;
-	::ZeroMemory(&d3d_DescriptorHeap_Desc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
+	ZeroMemory(&d3d_DescriptorHeap_Desc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
 	d3d_DescriptorHeap_Desc.NumDescriptors = m_nSwapChainBuffers;
 	d3d_DescriptorHeap_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	d3d_DescriptorHeap_Desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
@@ -269,7 +279,7 @@ void CFramework::Crt_Dsv() {
 	d3d_Resource_Desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
 
 	D3D12_HEAP_PROPERTIES d3d_Heap_Properties;
-	::ZeroMemory(&d3d_Heap_Properties, sizeof(D3D12_HEAP_PROPERTIES));
+	ZeroMemory(&d3d_Heap_Properties, sizeof(D3D12_HEAP_PROPERTIES));
 	d3d_Heap_Properties.Type = D3D12_HEAP_TYPE_DEFAULT;
 	d3d_Heap_Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	d3d_Heap_Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
@@ -309,7 +319,7 @@ void CFramework::Adavance_Frame() {
 	hResult = m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
 
 	D3D12_RESOURCE_BARRIER d3d_ResourceBarrier;
-	::ZeroMemory(&d3d_ResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
+	ZeroMemory(&d3d_ResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
 	d3d_ResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	d3d_ResourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 	d3d_ResourceBarrier.Transition.pResource = m_ppd3d_RenderTargetBuffers[m_nSwapChainBuffer_Index];
@@ -356,7 +366,7 @@ void CFramework::Adavance_Frame() {
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
 
 	m_Timer.Get_FrameRate(m_pcFrameRate + 10, 37);
-	::SetWindowText(m_hWnd, m_pcFrameRate);
+	SetWindowText(m_hWnd, m_pcFrameRate);
 }
 
 void CFramework::Wait_4_GPU_Complete() {
@@ -367,7 +377,7 @@ void CFramework::Wait_4_GPU_Complete() {
 
 	if (m_pd3d_Fence->GetCompletedValue() < nFence) {
 		hResult = m_pd3d_Fence->SetEventOnCompletion(nFence, m_hFence_Event);
-		::WaitForSingleObject(m_hFence_Event, INFINITE);
+		WaitForSingleObject(m_hFence_Event, INFINITE);
 	}
 }
 
@@ -391,13 +401,14 @@ void CFramework::Prcs_Msg_Keyboard(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARA
 	case WM_KEYUP :
 		switch (wParam) {
 		case VK_ESCAPE:
-			::PostQuitMessage(0);
+			PostQuitMessage(0);
 			break;
 		case VK_RETURN:
 			break;
 		case VK_F8:
 			break;
 		case VK_F9:
+			Chg_SwapChain_State();
 			break;
 		default:
 			break;
@@ -428,4 +439,36 @@ LRESULT CALLBACK CFramework::Prcs_Msg_Wnd(HWND hWnd, UINT nMsg_ID, WPARAM wParam
 	}
 
 	return 0;
+}
+
+void CFramework::Chg_SwapChain_State() {
+	Wait_4_GPU_Complete();
+
+	BOOL bFullScreen_State = FALSE;
+	m_pdxgi_SwapChain->GetFullscreenState(&bFullScreen_State, NULL);
+	m_pdxgi_SwapChain->SetFullscreenState(!bFullScreen_State, NULL);
+
+	DXGI_MODE_DESC dxgi_Target_Parameters;
+	dxgi_Target_Parameters.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	dxgi_Target_Parameters.Width = m_nWndClient_Width;
+	dxgi_Target_Parameters.Height = m_nWndClient_Height;
+	dxgi_Target_Parameters.RefreshRate.Numerator = 60;
+	dxgi_Target_Parameters.RefreshRate.Denominator = 1;
+	dxgi_Target_Parameters.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	dxgi_Target_Parameters.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	m_pdxgi_SwapChain->ResizeTarget(&dxgi_Target_Parameters);
+
+	for (int i = 0; i < m_nSwapChainBuffers; ++i) {
+		if (m_ppd3d_RenderTargetBuffers[i]) {
+			m_ppd3d_RenderTargetBuffers[i]->Release();
+		}
+	}
+
+	DXGI_SWAP_CHAIN_DESC dxgi_SwapChain_Desc;
+	m_pdxgi_SwapChain->GetDesc(&dxgi_SwapChain_Desc);
+	m_pdxgi_SwapChain->ResizeBuffers(m_nSwapChainBuffers, m_nWndClient_Width, m_nWndClient_Height, dxgi_SwapChain_Desc.BufferDesc.Format, dxgi_SwapChain_Desc.Flags);
+
+	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
+
+	Crt_Rtv();
 }

@@ -2,14 +2,14 @@
 #include "Timer.h"
 
 CTimer::CTimer() {
-	if (::QueryPerformanceFrequency((LARGE_INTEGER*)&m_nPerformance_Frequency)) {
+	if (QueryPerformanceFrequency((LARGE_INTEGER*)&m_nPerformance_Frequency)) {
 		m_bHardware_Has_Performance_Counter = TRUE;
-		::QueryPerformanceCounter((LARGE_INTEGER*)&m_nLast_Time);
+		QueryPerformanceCounter((LARGE_INTEGER*)&m_nLast_Time);
 		m_fTime_Scale = 1.0f / m_nPerformance_Frequency;
 	}
 	else {
 		m_bHardware_Has_Performance_Counter = FALSE;
-		m_nLast_Time = ::timeGetTime();
+		m_nLast_Time = timeGetTime();
 		m_fTime_Scale = 0.001f;
 	}
 
@@ -24,7 +24,7 @@ CTimer::~CTimer() {
 
 void CTimer::Reset() {
 	__int64 nPerformance_Counter;
-	::QueryPerformanceCounter((LARGE_INTEGER*)&nPerformance_Counter);
+	QueryPerformanceCounter((LARGE_INTEGER*)&nPerformance_Counter);
 
 	m_nLast_Time = nPerformance_Counter;
 	m_nCurrent_Time = nPerformance_Counter;
@@ -34,10 +34,10 @@ void CTimer::Reset() {
 
 void CTimer::Tick(float fLock_FPS) {
 	if (m_bHardware_Has_Performance_Counter) {
-		::QueryPerformanceCounter((LARGE_INTEGER*)&m_nCurrent_Time);
+		QueryPerformanceCounter((LARGE_INTEGER*)&m_nCurrent_Time);
 	}
 	else {
-		m_nCurrent_Time = ::timeGetTime();
+		m_nCurrent_Time = timeGetTime();
 	}
 
 	float fElapsed_Time = (m_nCurrent_Time - m_nLast_Time) * m_fTime_Scale;
@@ -45,10 +45,10 @@ void CTimer::Tick(float fLock_FPS) {
 	if (fLock_FPS > 0.0f) {
 		while (fElapsed_Time < (1.0f / fLock_FPS)) {
 			if (m_bHardware_Has_Performance_Counter) {
-				::QueryPerformanceCounter((LARGE_INTEGER*)&m_nCurrent_Time);
+				QueryPerformanceCounter((LARGE_INTEGER*)&m_nCurrent_Time);
 			}
 			else {
-				m_nCurrent_Time = ::timeGetTime();
+				m_nCurrent_Time = timeGetTime();
 			}
 
 			fElapsed_Time = (m_nCurrent_Time - m_nLast_Time) * m_fTime_Scale;
@@ -58,7 +58,7 @@ void CTimer::Tick(float fLock_FPS) {
 	m_nLast_Time = m_nCurrent_Time;
 
 	if (fabsf(fElapsed_Time - m_fElapsed_Time) < 1.0f) {
-		::memmove(&m_fFrame_Time[1], m_fFrame_Time, (MAX_SAMPLE_COUNT - 1) * sizeof(float));
+		memmove(&m_fFrame_Time[1], m_fFrame_Time, (MAX_SAMPLE_COUNT - 1) * sizeof(float));
 		m_fFrame_Time[0] = fElapsed_Time;
 
 		if (m_nSample_Count < MAX_SAMPLE_COUNT) {

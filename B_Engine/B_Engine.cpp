@@ -134,6 +134,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
+#ifdef _WITH_SWAPCHAIN_FULLSCREEN_STATE
+   gFramework.Chg_SwapChain_State();
+#endif
+
    return TRUE;
 }
 

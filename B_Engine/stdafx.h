@@ -51,3 +51,6 @@ using Microsoft::WRL::ComPtr;
 // client rect size
 #define FRAME_BUFFER_WIDTH	800
 #define FRAME_BUFFER_HEIGHT	600
+
+// fullscreen default
+//#define _WITH_SWAPCHAIN_FULLSCREEN_STATE
