@@ -57,3 +57,6 @@ using Microsoft::WRL::ComPtr;
 
 // fullscreen default
 //#define _WITH_SWAPCHAIN_FULLSCREEN_STATE
+
+extern ID3D12Resource* Crt_Buffer_Resource(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, void* pData, UINT nBytes, D3D12_HEAP_TYPE d3d_HeapType = D3D12_HEAP_TYPE_UPLOAD,
+	D3D12_RESOURCE_STATES d3d_Resource_States = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, ID3D12Resource** ppd3d_UploadBuffer = NULL);

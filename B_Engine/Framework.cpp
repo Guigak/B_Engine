@@ -306,9 +306,19 @@ void CFramework::Crt_Dsv() {
 }
 
 void CFramework::Build_Objects() {
+	m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
+
 	m_pScene = new CScene();
+	m_pScene->Build_Objects(m_pd3d_Device, m_pd3d_Command_List);
+
+	m_pd3d_Command_List->Close();
+	ID3D12CommandList* ppd3d_Command_Lists[] = { m_pd3d_Command_List };
+	m_pd3d_Command_Queue->ExecuteCommandLists(1, ppd3d_Command_Lists);
+
+	Wait_4_GPU_Complete();
+
 	if (m_pScene) {
-		m_pScene->Build_Objects(m_pd3d_Device);
+		m_pScene->Release_Upload_Buffers();
 	}
 
 	m_Timer.Reset();
