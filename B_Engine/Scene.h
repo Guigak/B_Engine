@@ -2,11 +2,15 @@
 
 #include "Timer.h"
 #include "Shader.h"
+#include "Object.h"
 
 class CScene {
 protected :
 	CShader** m_ppShaders = NULL;
 	int m_nShaders = 0;
+
+	CObject** m_ppObjects = NULL;
+	int m_nObjects = 0;
 
 	ID3D12RootSignature* m_pd3d_Graphics_RootSignature = NULL;
 
@@ -24,7 +28,7 @@ public :
 	void Anim_Objects(float fElapsed_Time);
 
 	//void Prepare_Render(ID3D12GraphicsCommandList* pd3d_Command_List);	// unused
-	void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
+	void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
 
 	void Release_Upload_Buffers();
 

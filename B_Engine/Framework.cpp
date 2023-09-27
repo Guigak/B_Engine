@@ -31,8 +31,8 @@ CFramework::CFramework() {
 
 	m_pScene = NULL;
 
-	m_d3d_Viewport = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f };
-	m_d3d_ScissoerRect = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT };
+	//m_d3d_Viewport = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT, 0.0f, 1.0f };
+	//m_d3d_ScissoerRect = { 0, 0, FRAME_BUFFER_WIDTH, FRAME_BUFFER_HEIGHT };
 
 	m_nWndClient_Width = FRAME_BUFFER_WIDTH;
 	m_nWndClient_Height = FRAME_BUFFER_HEIGHT;
@@ -144,6 +144,10 @@ void CFramework::Crt_SwapChain() {
 	HRESULT hResult = m_pdxgi_Factory->CreateSwapChain(m_pd3d_Command_Queue, &dxgi_SwapChain_Desc, (IDXGISwapChain**)&m_pdxgi_SwapChain);
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("스왑체인 에러\n");
+	}
+
 	hResult = m_pdxgi_Factory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
 
 #ifndef _WITH_SWAPCHAIN_FULLSCREEN_STATE
@@ -183,6 +187,10 @@ void CFramework::Crt_D3D_Device() {
 
 	hResult = CreateDXGIFactory2(ndxgi_Factory_Flags, __uuidof(IDXGIFactory4), (void**)&m_pdxgi_Factory);
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("팩토리 에러\n");
+	}
+
 	IDXGIAdapter1* pd3d_Adapter = NULL;
 
 	for (UINT i = 0; DXGI_ERROR_NOT_FOUND != m_pdxgi_Factory->EnumAdapters1(i, &pd3d_Adapter); ++i) {
@@ -216,16 +224,20 @@ void CFramework::Crt_D3D_Device() {
 		m_pnFence_Value[i] = 0;
 	}
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("펜스 생성 에러\n");
+	}
+
 	m_hFence_Event = CreateEvent(NULL, FALSE, FALSE, NULL);
 
-	m_d3d_Viewport.TopLeftX = 0;
-	m_d3d_Viewport.TopLeftY = 0;
-	m_d3d_Viewport.Width = static_cast<float>(m_nWndClient_Width);
-	m_d3d_Viewport.Height = static_cast<float>(m_nWndClient_Height);
-	m_d3d_Viewport.MinDepth = 0.0f;
-	m_d3d_Viewport.MaxDepth = 0.0f;
+	//m_d3d_Viewport.TopLeftX = 0;
+	//m_d3d_Viewport.TopLeftY = 0;
+	//m_d3d_Viewport.Width = static_cast<float>(m_nWndClient_Width);
+	//m_d3d_Viewport.Height = static_cast<float>(m_nWndClient_Height);
+	//m_d3d_Viewport.MinDepth = 0.0f;
+	//m_d3d_Viewport.MaxDepth = 0.0f;
 
-	m_d3d_ScissoerRect = { 0, 0, m_nWndClient_Width, m_nWndClient_Height };
+	//m_d3d_ScissoerRect = { 0, 0, m_nWndClient_Width, m_nWndClient_Height };
 
 	if (pd3d_Adapter) {
 		pd3d_Adapter->Release();
@@ -239,11 +251,27 @@ void CFramework::Crt_Command_Queue_N_List() {
 	d3d_Command_Queue_Desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
 	HRESULT hResult = m_pd3d_Device->CreateCommandQueue(&d3d_Command_Queue_Desc, __uuidof(ID3D12CommandQueue), (void**)&m_pd3d_Command_Queue);
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 큐 생성 에러\n");
+	}
+
 	hResult = m_pd3d_Device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&m_pd3d_Command_Allocator);
+
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 알로케이터 생성 에러\n");
+	}
 
 	hResult = m_pd3d_Device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_pd3d_Command_Allocator, NULL, __uuidof(ID3D12GraphicsCommandList), (void**)&m_pd3d_Command_List);
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 리스트 생성 에러\n");
+	}
+
 	hResult = m_pd3d_Command_List->Close();
+
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 리스트 클로즈 에러\n");
+	}
 }
 
 void CFramework::Crt_Rtv_N_Dsv_DescriptorHeaps() {
@@ -256,10 +284,18 @@ void CFramework::Crt_Rtv_N_Dsv_DescriptorHeaps() {
 	HRESULT hResult = m_pd3d_Device->CreateDescriptorHeap(&d3d_DescriptorHeap_Desc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pd3d_Rtv_DescriptorHeap);
 	m_nRtv_Descriptor_IncrementSize = m_pd3d_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 
+	if (FAILED(hResult)) {
+		OutputDebugStringA("디스크립터 힙 생성 에러(RTV)\n");
+	}
+
 	d3d_DescriptorHeap_Desc.NumDescriptors = 1;
 	d3d_DescriptorHeap_Desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
 	hResult = m_pd3d_Device->CreateDescriptorHeap(&d3d_DescriptorHeap_Desc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pd3d_Dsv_DescriptorHeap);
 	m_nDsv_Descriptor_IncrementSize = m_pd3d_Device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
+
+	if (FAILED(hResult)) {
+		OutputDebugStringA("디스크립터 힙 생성 에러(DSV)\n");
+	}
 }
 
 void CFramework::Crt_Rtv() {
@@ -308,6 +344,12 @@ void CFramework::Crt_Dsv() {
 void CFramework::Build_Objects() {
 	m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
 
+	m_pCamera = new CCamera;
+	m_pCamera->Set_Viewport(0, 0, m_nWndClient_Width, m_nWndClient_Height, 0.0f, 1.0f);
+	m_pCamera->Set_ScissorRect(0, 0, m_nWndClient_Width, m_nWndClient_Height);
+	m_pCamera->Gernerate_projection_Matrix(90.0f, ASPECT_RATIO, 1.0f, 500.0f);
+	m_pCamera->Generate_View_Matrix(DirectX::XMFLOAT3(0.0f, 0.0f, -2.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+
 	m_pScene = new CScene();
 	m_pScene->Build_Objects(m_pd3d_Device, m_pd3d_Command_List);
 
@@ -341,7 +383,7 @@ void CFramework::Anim_Objects() {
 }
 
 void CFramework::Adavance_Frame() {
-	m_Timer.Tick(0.0f);
+	m_Timer.Tick(60.0f);
 
 	Prcs_Input();
 	Anim_Objects();
@@ -349,8 +391,9 @@ void CFramework::Adavance_Frame() {
 	HRESULT hResult = m_pd3d_Command_Allocator->Reset();
 	hResult = m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
 
-	m_pd3d_Command_List->RSSetViewports(1, &m_d3d_Viewport);
-	m_pd3d_Command_List->RSSetScissorRects(1, &m_d3d_ScissoerRect);
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 리스트 리셋 에러\n");
+	}
 
 	D3D12_RESOURCE_BARRIER d3d_ResourceBarrier;
 	ZeroMemory(&d3d_ResourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
@@ -375,7 +418,7 @@ void CFramework::Adavance_Frame() {
 
 	// render
 	if (m_pScene) {
-		m_pScene->Render(m_pd3d_Command_List);
+		m_pScene->Render(m_pd3d_Command_List, m_pCamera);
 	}
 
 	d3d_ResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -384,6 +427,10 @@ void CFramework::Adavance_Frame() {
 	m_pd3d_Command_List->ResourceBarrier(1, &d3d_ResourceBarrier);
 
 	hResult = m_pd3d_Command_List->Close();
+
+	if (FAILED(hResult)) {
+		OutputDebugStringA("커맨드 리스트 클로즈 에러\n");
+	}
 
 	ID3D12CommandList* ppd3d_Command_Lists[] = { m_pd3d_Command_List };
 	m_pd3d_Command_Queue->ExecuteCommandLists(1, ppd3d_Command_Lists);
@@ -405,6 +452,10 @@ void CFramework::Wait_4_GPU_Complete() {
 	if (m_pd3d_Fence->GetCompletedValue() < nFence_Value) {
 		hResult = m_pd3d_Fence->SetEventOnCompletion(nFence_Value, m_hFence_Event);
 		WaitForSingleObject(m_hFence_Event, INFINITE);
+	}
+
+	if (FAILED(hResult)) {
+		OutputDebugStringA("펜스 에러\n");
 	}
 }
 

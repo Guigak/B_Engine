@@ -2,6 +2,11 @@
 
 #include "stdafx.h"
 #include "Object.h"
+#include "Camera.h"
+
+struct CB_GAMEOBJECT_INFO {
+	DirectX::XMFLOAT4X4 m_xmf4x4_World;
+};
 
 class CShader {
 private:
@@ -41,9 +46,11 @@ public:
 
 	virtual void Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_RootSignature);
 
-	virtual void Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {}
-	virtual void Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List) {}
-	virtual void Release_Shader_Variables() {}
+	virtual void Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Release_Shader_Variables();
+
+	virtual void Udt_Shader_Variable(ID3D12GraphicsCommandList* pd3d_Command_List, DirectX::XMFLOAT4X4* pxmf4x4_World);
 
 	virtual void Release_Upload_Buffers();
 
@@ -52,5 +59,18 @@ public:
 	virtual void Release_Objects();
 
 	virtual void Prepare_Render(ID3D12GraphicsCommandList* pd3d_Command_List);
-	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+};
+
+class CDiffused_Shader : public CShader {
+public :
+	CDiffused_Shader();
+	virtual ~CDiffused_Shader();
+
+	virtual D3D12_INPUT_LAYOUT_DESC Crt_Input_Layout();
+	
+	virtual D3D12_SHADER_BYTECODE Crt_Vertex_Shader(ID3DBlob** ppd3d_Shader_Blob);
+	virtual D3D12_SHADER_BYTECODE Crt_Pixel_Shader(ID3DBlob** ppd3d_Shader_Blob);
+
+	virtual void Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_Graphics_RootSignature);
 };

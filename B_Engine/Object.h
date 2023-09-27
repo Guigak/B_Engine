@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include "Mesh.h"
+#include "Camera.h"
 
 class CShader;
 
@@ -33,11 +34,31 @@ public :
 	void Release_Upload_Buffers();
 
 	virtual void Set_Mesh(CMesh* pMesh);
-	virtual void Set_Shader(CShader* pShader); // unused
+	virtual void Set_Shader(CShader* pShader);
 
 	virtual void Anim(float fElapsed_Time);
 
 	virtual void Prepare_Render();
-	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+
+	void Rotate(DirectX::XMFLOAT3* pxmf3_Axis, float fAngle);
 };
 
+class CRotating_Object : public CObject {
+private :
+	DirectX::XMFLOAT3 m_xmf3_Rotation_Axis;
+	float m_fRotation_Speed;
+
+public :
+	CRotating_Object();
+	virtual ~CRotating_Object();
+
+	void Set_Rotation_Axis(DirectX::XMFLOAT3 xmf3_Rotation_Axis) {
+		m_xmf3_Rotation_Axis = xmf3_Rotation_Axis;
+	}
+	void Set_Rotation_Speed(float fRotation_Speed) {
+		m_fRotation_Speed = fRotation_Speed;
+	}
+
+	virtual void Anim(float fElapsed_Time);
+};

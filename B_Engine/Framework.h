@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include "Timer.h"
 #include "Scene.h"
+#include "Camera.h"
 
 class CFramework {
 private :
@@ -49,9 +50,9 @@ private :
 	UINT64 m_pnFence_Value[m_nSwapChainBuffers];
 	HANDLE m_hFence_Event;
 
-	// Viewport, ScissorRect
-	D3D12_VIEWPORT m_d3d_Viewport;
-	D3D12_RECT m_d3d_ScissoerRect;
+	// Viewport, ScissorRect	// unused
+	//D3D12_VIEWPORT m_d3d_Viewport;
+	//D3D12_RECT m_d3d_ScissoerRect;
 
 	// Timer
 	CTimer m_Timer;
@@ -60,6 +61,9 @@ private :
 
 	// Scene
 	CScene* m_pScene;
+
+	// Camera
+	CCamera* m_pCamera = NULL;
 
 public :
 	CFramework();
