@@ -52,6 +52,16 @@ protected :
 	UINT m_nStride = 0;
 	UINT m_nOffset = 0;
 
+	//
+	ID3D12Resource* m_pd3d_Index_Buffer = NULL;
+	ID3D12Resource* m_pd3d_Index_Upload_Buffer = NULL;
+
+	D3D12_INDEX_BUFFER_VIEW m_d3d_Index_Buffer_View;
+
+	UINT m_nIndices = 0;
+	UINT m_nStart_Index = 0;
+	UINT m_nBase_Vertex = 0;
+
 public :
 	CMesh() = default;
 	CMesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
