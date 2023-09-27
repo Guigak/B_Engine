@@ -42,3 +42,82 @@ CTriangle_Mesh::CTriangle_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandL
 	m_d3d_Vertex_Buffer_View.StrideInBytes = m_nStride;
 	m_d3d_Vertex_Buffer_View.SizeInBytes = m_nStride * m_nVertices;
 }
+
+CCube_Mesh::CCube_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fWidth, float fHeight, float fDepth) {
+	m_nVertices = 36;
+	m_nStride = sizeof(CDiffused_Vertex);
+	m_nOffset = 0;
+	m_nSlot = 0;
+	m_d3d_Primitive_Topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	float fx = fWidth * 0.5f;
+	float fy = fHeight * 0.5f;
+	float fz = fDepth * 0.5f;
+
+	CDiffused_Vertex pVertices[36];
+	int i = 0;
+
+	// front
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+
+	// top
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
+
+	// back
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+
+	// bottom
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
+
+	// left
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
+
+	// right
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
+
+	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
+
+	m_d3d_Vertex_Buffer_View.BufferLocation = m_pd3d_Vertex_Buffer->GetGPUVirtualAddress();
+	m_d3d_Vertex_Buffer_View.StrideInBytes = m_nStride;
+	m_d3d_Vertex_Buffer_View.SizeInBytes = m_nStride * m_nVertices;
+}
+
+CCube_Mesh::~CCube_Mesh()
+{
+}

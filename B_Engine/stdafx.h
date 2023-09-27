@@ -55,6 +55,9 @@ using Microsoft::WRL::ComPtr;
 #define FRAME_BUFFER_WIDTH	800
 #define FRAME_BUFFER_HEIGHT	600
 
+// random color
+#define RANDOM_COLOR DirectX::XMFLOAT4(rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX))
+
 // fullscreen default
 //#define _WITH_SWAPCHAIN_FULLSCREEN_STATE
 

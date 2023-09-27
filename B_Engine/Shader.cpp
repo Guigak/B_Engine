@@ -37,7 +37,7 @@ D3D12_RASTERIZER_DESC CShader::Crt_Rasterizer_State() {
 	D3D12_RASTERIZER_DESC d3d_Rasterizer_Desc;
 	ZeroMemory(&d3d_Rasterizer_Desc, sizeof(D3D12_RASTERIZER_DESC));
 	d3d_Rasterizer_Desc.FillMode = D3D12_FILL_MODE_SOLID;
-	d3d_Rasterizer_Desc.CullMode = D3D12_CULL_MODE_NONE;
+	d3d_Rasterizer_Desc.CullMode = D3D12_CULL_MODE_BACK;
 	d3d_Rasterizer_Desc.FrontCounterClockwise = FALSE;
 	d3d_Rasterizer_Desc.DepthBias = 0;
 	d3d_Rasterizer_Desc.DepthBiasClamp = 0.0f;

@@ -74,13 +74,13 @@ ID3D12RootSignature* CScene::Get_Graphics_RootSignature() {	// unused
 void CScene::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
 	m_pd3d_Graphics_RootSignature = Crt_Graphics_RootSignature(pd3d_Device);
 
-	CTriangle_Mesh* pMesh = new CTriangle_Mesh(pd3d_Device, pd3d_Command_List);
+	CCube_Mesh* pCube_Mesh = new CCube_Mesh(pd3d_Device, pd3d_Command_List, 12.0f, 12.0f, 12.0f);
 
 	m_nObjects = 1;
 	m_ppObjects = new CObject * [m_nObjects];
 
 	CRotating_Object* pRotating_Object = new CRotating_Object();
-	pRotating_Object->Set_Mesh(pMesh);
+	pRotating_Object->Set_Mesh(pCube_Mesh);
 
 	CDiffused_Shader* pShader = new CDiffused_Shader();
 	pShader->Crt_Shader(pd3d_Device, m_pd3d_Graphics_RootSignature);

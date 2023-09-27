@@ -77,3 +77,9 @@ public :
 	CTriangle_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
 	virtual ~CTriangle_Mesh() {};
 };
+
+class CCube_Mesh : public CMesh {
+public :
+	CCube_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fWidth = 2.0f, float fHeight = 2.0f, float fDepth = 2.0f);
+	virtual ~CCube_Mesh();
+};
