@@ -54,6 +54,8 @@ void CObject::Prepare_Render() {
 void CObject::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera) {
 	Prepare_Render();
 
+	Udt_Shader_Variables(pd3d_Command_List);
+
 	if (m_pShader) {
 		m_pShader->Udt_Shader_Variable(pd3d_Command_List, &m_xmf4x4_World);
 		m_pShader->Render(pd3d_Command_List, pCamera);
@@ -66,6 +68,74 @@ void CObject::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCam
 
 void CObject::Rotate(DirectX::XMFLOAT3* pxmf3_Axis, float fAngle) {
 	DirectX::XMMATRIX xmmtx_Rotate = DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(pxmf3_Axis), DirectX::XMConvertToRadians(fAngle));
+	m_xmf4x4_World = Matrix4x4::Multiply(xmmtx_Rotate, m_xmf4x4_World);
+}
+
+void CObject::Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
+}
+
+void CObject::Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List) {
+	DirectX::XMFLOAT4X4 xmf4x4_World;
+	DirectX::XMStoreFloat4x4(&xmf4x4_World, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&m_xmf4x4_World)));
+
+	pd3d_Command_List->SetGraphicsRoot32BitConstants(0, 16, &xmf4x4_World, 0);
+}
+
+void CObject::Release_Shader_Variables() {
+}
+
+DirectX::XMFLOAT3 CObject::Get_Position() {
+	return DirectX::XMFLOAT3(m_xmf4x4_World._41, m_xmf4x4_World._42, m_xmf4x4_World._43);
+}
+
+DirectX::XMFLOAT3 CObject::Get_Look() {
+	return Vector3::Normalize(DirectX::XMFLOAT3(m_xmf4x4_World._31, m_xmf4x4_World._32, m_xmf4x4_World._33));
+}
+
+DirectX::XMFLOAT3 CObject::Get_Up() {
+	return Vector3::Normalize(DirectX::XMFLOAT3(m_xmf4x4_World._21, m_xmf4x4_World._22, m_xmf4x4_World._23));
+}
+
+DirectX::XMFLOAT3 CObject::Get_Right() {
+	return Vector3::Normalize(DirectX::XMFLOAT3(m_xmf4x4_World._11, m_xmf4x4_World._12, m_xmf4x4_World._13));
+}
+
+void CObject::Set_Position(float x, float y, float z) {
+	m_xmf4x4_World._41 = x;
+	m_xmf4x4_World._42 = y;
+	m_xmf4x4_World._43 = z;
+}
+
+void CObject::Set_Position(DirectX::XMFLOAT3 xmf3_Position) {
+	Set_Position(xmf3_Position.x, xmf3_Position.y, xmf3_Position.z);
+}
+
+void CObject::Move_right(float fDistance) {
+	DirectX::XMFLOAT3 xmf3_Position = Get_Position();
+	DirectX::XMFLOAT3 xmf3_Right = Get_Right();
+	xmf3_Position = Vector3::Add(xmf3_Position, xmf3_Right, fDistance);
+
+	Set_Position(xmf3_Position);
+}
+
+void CObject::Move_Up(float fDistance) {
+	DirectX::XMFLOAT3 xmf3_Position = Get_Position();
+	DirectX::XMFLOAT3 xmf3_Up = Get_Up();
+	xmf3_Position = Vector3::Add(xmf3_Position, xmf3_Up, fDistance);
+
+	Set_Position(xmf3_Position);
+}
+
+void CObject::Move_Forward(float fDistance) {
+	DirectX::XMFLOAT3 xmf3_Position = Get_Position();
+	DirectX::XMFLOAT3 xmf3_Look = Get_Look();
+	xmf3_Position = Vector3::Add(xmf3_Position, xmf3_Look, fDistance);
+
+	Set_Position(xmf3_Position);
+}
+
+void CObject::Rotate(float fPitch, float fYaw, float fRoll) {
+	DirectX::XMMATRIX xmmtx_Rotate = DirectX::XMMatrixRotationRollPitchYaw(DirectX::XMConvertToRadians(fPitch), DirectX::XMConvertToRadians(fYaw), DirectX::XMConvertToRadians(fRoll));
 	m_xmf4x4_World = Matrix4x4::Multiply(xmmtx_Rotate, m_xmf4x4_World);
 }
 

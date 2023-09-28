@@ -74,21 +74,10 @@ ID3D12RootSignature* CScene::Get_Graphics_RootSignature() {	// unused
 void CScene::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
 	m_pd3d_Graphics_RootSignature = Crt_Graphics_RootSignature(pd3d_Device);
 
-	CCube_Mesh* pCube_Mesh = new CCube_Mesh(pd3d_Device, pd3d_Command_List, 12.0f, 12.0f, 12.0f);
-
-	m_nObjects = 1;
-	m_ppObjects = new CObject * [m_nObjects];
-
-	CRotating_Object* pRotating_Object = new CRotating_Object();
-	pRotating_Object->Set_Mesh(pCube_Mesh);
-
-	CDiffused_Shader* pShader = new CDiffused_Shader();
-	pShader->Crt_Shader(pd3d_Device, m_pd3d_Graphics_RootSignature);
-	pShader->Crt_Shader_Variables(pd3d_Device, pd3d_Command_List);
-
-	pRotating_Object->Set_Shader(pShader);
-
-	m_ppObjects[0] = pRotating_Object;
+	m_nShaders = 1;
+	m_pShaders = new CObjects_Shader[m_nShaders];
+	m_pShaders[0].Crt_Shader(pd3d_Device, m_pd3d_Graphics_RootSignature);
+	m_pShaders[0].Build_Objects(pd3d_Device, pd3d_Command_List);
 }
 
 void CScene::Release_Objects() {
@@ -96,14 +85,13 @@ void CScene::Release_Objects() {
 		m_pd3d_Graphics_RootSignature->Release();
 	}
 
-	if (m_ppObjects) {
-		for (int i = 0; i < m_nObjects; ++i) {
-			if (m_ppObjects[i]) {
-				delete m_ppObjects[i];
-			}
+	for (int i = 0; i < m_nShaders; ++i) {
+		m_pShaders[i].Release_Shader_Variables();
+		m_pShaders[i].Release_Objects();
+	}
 
-			delete[] m_ppObjects;
-		}
+	if (m_pShaders) {
+		delete[] m_pShaders;
 	}
 }
 
@@ -112,8 +100,8 @@ bool CScene::Prcs_Input() {
 }
 
 void CScene::Anim_Objects(float fElapsed_Time) {
-	for (int i = 0; i < m_nObjects; ++i) {
-		m_ppObjects[i]->Anim(fElapsed_Time);
+	for (int i = 0; i < m_nShaders; ++i) {
+		m_pShaders[i].Anim_Objects(fElapsed_Time);
 	}
 }
 
@@ -131,19 +119,13 @@ void CScene::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCame
 		pCamera->Udt_Shader_Variables(pd3d_Command_List);
 	}
 
-	for (int i = 0; i < m_nObjects; ++i) {
-		if (m_ppObjects[i]) {
-			m_ppObjects[i]->Render(pd3d_Command_List, pCamera);
-		}
+	for (int i = 0; i < m_nShaders; ++i) {
+		m_pShaders[i].Render(pd3d_Command_List, pCamera);
 	}
 }
 
 void CScene::Release_Upload_Buffers() {
-	if (m_ppObjects) {
-		for (int i = 0; i < m_nObjects; ++i) {
-			if (m_ppObjects[i]) {
-				m_ppObjects[i]->Release_Upload_Buffers();
-			}
-		}
+	for (int i = 0; i < m_nShaders; ++i) {
+		m_pShaders[i].Release_Upload_Buffers();
 	}
 }

@@ -74,3 +74,28 @@ public :
 
 	virtual void Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_Graphics_RootSignature);
 };
+
+//
+class CObjects_Shader : public CShader {
+protected :
+	CObject** m_ppObjects = NULL;
+	int m_nObjects = 0;
+
+public :
+	CObjects_Shader();
+	virtual ~CObjects_Shader();
+
+	virtual void Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Release_Objects();
+
+	virtual D3D12_INPUT_LAYOUT_DESC Crt_Input_Layout();
+	virtual D3D12_SHADER_BYTECODE Crt_Vertex_Shader(ID3DBlob** ppd3d_Shader_Blob);
+	virtual D3D12_SHADER_BYTECODE Crt_Pixel_Shader(ID3DBlob** ppd3d_Shader_Blob);
+
+	virtual void Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_Graphics_RootSignature);
+
+	virtual void Release_Upload_Buffers();
+
+	virtual void Anim_Objects(float fElapsed_Time);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+};

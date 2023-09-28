@@ -348,7 +348,7 @@ void CFramework::Build_Objects() {
 	m_pCamera->Set_Viewport(0, 0, m_nWndClient_Width, m_nWndClient_Height, 0.0f, 1.0f);
 	m_pCamera->Set_ScissorRect(0, 0, m_nWndClient_Width, m_nWndClient_Height);
 	m_pCamera->Gernerate_projection_Matrix(90.0f, ASPECT_RATIO, 1.0f, 500.0f);
-	m_pCamera->Generate_View_Matrix(DirectX::XMFLOAT3(0.0f, 15.0f, -25.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+	m_pCamera->Generate_View_Matrix(DirectX::XMFLOAT3(0.0f, 0.0f, -50.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
 
 	m_pScene = new CScene();
 	m_pScene->Build_Objects(m_pd3d_Device, m_pd3d_Command_List);
@@ -383,7 +383,7 @@ void CFramework::Anim_Objects() {
 }
 
 void CFramework::Adavance_Frame() {
-	m_Timer.Tick(60.0f);
+	m_Timer.Tick(0.0f);
 
 	Prcs_Input();
 	Anim_Objects();

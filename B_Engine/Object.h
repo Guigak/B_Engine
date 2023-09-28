@@ -42,6 +42,25 @@ public :
 	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
 
 	void Rotate(DirectX::XMFLOAT3* pxmf3_Axis, float fAngle);
+
+	//
+	virtual void Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Release_Shader_Variables();
+
+	DirectX::XMFLOAT3 Get_Position();
+	DirectX::XMFLOAT3 Get_Look();
+	DirectX::XMFLOAT3 Get_Up();
+	DirectX::XMFLOAT3 Get_Right();
+
+	void Set_Position(float x, float y, float z);
+	void Set_Position(DirectX::XMFLOAT3 xmf3_Position);
+
+	void Move_right(float fDistance = 1.0f);
+	void Move_Up(float fDistance = 1.0f);
+	void Move_Forward(float fDistance = 1.0f);
+
+	void Rotate(float fPitch = 10.0f, float fYaw = 10.0f, float fRoll = 10.0f);
 };
 
 class CRotating_Object : public CObject {
