@@ -4,9 +4,18 @@
 #include "Object.h"
 #include "Camera.h"
 
+//
+
 struct CB_GAMEOBJECT_INFO {
 	DirectX::XMFLOAT4X4 m_xmf4x4_World;
 };
+
+struct VS_VB_INSTANCE {
+	DirectX::XMFLOAT4X4 m_xmf4x4_Transform;
+	DirectX::XMFLOAT4 m_xmf4_Color;
+};
+
+//
 
 class CShader {
 private:
@@ -97,5 +106,29 @@ public :
 	virtual void Release_Upload_Buffers();
 
 	virtual void Anim_Objects(float fElapsed_Time);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+};
+
+//
+class CInstancing_Shader : public CObjects_Shader {
+protected :
+	ID3D12Resource* m_pd3d_CB_Objects = NULL;
+	VS_VB_INSTANCE* m_pCB_Mapped_Objects = NULL;
+
+public :
+	CInstancing_Shader();
+	virtual ~CInstancing_Shader();
+
+	virtual D3D12_INPUT_LAYOUT_DESC Crt_Input_Layout();
+	virtual D3D12_SHADER_BYTECODE Crt_Vertex_Shader(ID3DBlob** ppd3d_Shader_Blob);
+	virtual D3D12_SHADER_BYTECODE Crt_Pixel_Shader(ID3DBlob** ppd3d_Shader_Blob);
+	virtual void Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_Graphics_RootSignature);
+
+	virtual void Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Release_Shader_Variables();
+
+	virtual void Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
+
 	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
 };

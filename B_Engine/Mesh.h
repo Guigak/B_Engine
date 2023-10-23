@@ -79,7 +79,8 @@ public :
 	void Release_Upload_Buffers();
 
 public :
-	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
+	//virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, UINT nInstances = 1);
 };
 
 class CTriangle_Mesh : public CMesh {

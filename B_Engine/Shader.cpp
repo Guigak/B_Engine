@@ -288,7 +288,7 @@ CObjects_Shader::~CObjects_Shader() {
 }
 
 void CObjects_Shader::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
-	CCube_Mesh* pCube_Mesh = new CCube_Mesh(pd3d_Device, pd3d_Command_List, 12.0f, 12.0f, 12.0f);
+	/*CCube_Mesh* pCube_Mesh = new CCube_Mesh(pd3d_Device, pd3d_Command_List, 12.0f, 12.0f, 12.0f);
 
 	int x_objs = 10;
 	int y_objs = 10;
@@ -319,7 +319,7 @@ void CObjects_Shader::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCom
 		}
 	}
 
-	Crt_Shader_Variables(pd3d_Device, pd3d_Command_List);
+	Crt_Shader_Variables(pd3d_Device, pd3d_Command_List);*/
 }
 
 void CObjects_Shader::Release_Objects() {
@@ -385,4 +385,109 @@ void CObjects_Shader::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCame
 			m_ppObjects[i]->Render(pd3d_Command_List, pCamera);
 		}
 	}
+}
+
+//
+CInstancing_Shader::CInstancing_Shader() {
+}
+
+CInstancing_Shader::~CInstancing_Shader() {
+}
+
+D3D12_INPUT_LAYOUT_DESC CInstancing_Shader::Crt_Input_Layout() {
+	UINT nInput_Element_Descs = 2;
+	D3D12_INPUT_ELEMENT_DESC* pd3d_Input_Element_Descs = new D3D12_INPUT_ELEMENT_DESC[nInput_Element_Descs];
+
+	pd3d_Input_Element_Descs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	pd3d_Input_Element_Descs[1] = { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC d3d_Input_Layout_Desc;
+	d3d_Input_Layout_Desc.pInputElementDescs = pd3d_Input_Element_Descs;
+	d3d_Input_Layout_Desc.NumElements = nInput_Element_Descs;
+
+	return d3d_Input_Layout_Desc;
+}
+
+D3D12_SHADER_BYTECODE CInstancing_Shader::Crt_Vertex_Shader(ID3DBlob** ppd3d_Shader_Blob) {
+	return (CShader::Compile_Shader_From_File(L"Shaders.hlsl", "VSInstancing", "vs_5_1", ppd3d_Shader_Blob));
+}
+
+D3D12_SHADER_BYTECODE CInstancing_Shader::Crt_Pixel_Shader(ID3DBlob** ppd3d_Shader_Blob) {
+	return (CShader::Compile_Shader_From_File(L"Shaders.hlsl", "PSInstancing", "ps_5_1", ppd3d_Shader_Blob));
+}
+
+void CInstancing_Shader::Crt_Shader(ID3D12Device* pd3d_Device, ID3D12RootSignature* pd3d_Graphics_RootSignature) {
+	m_nPipeline_States = 1;
+	m_ppd3d_Pipeline_States = new ID3D12PipelineState * [m_nPipeline_States];
+
+	CShader::Crt_Shader(pd3d_Device, pd3d_Graphics_RootSignature);
+}
+
+void CInstancing_Shader::Crt_Shader_Variables(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
+	m_pd3d_CB_Objects = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, NULL, sizeof(VS_VB_INSTANCE) * m_nObjects, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_GENERIC_READ, NULL);
+
+	m_pd3d_CB_Objects->Map(0, NULL, (void**)&m_pCB_Mapped_Objects);
+}
+
+void CInstancing_Shader::Udt_Shader_Variables(ID3D12GraphicsCommandList* pd3d_Command_List) {
+	pd3d_Command_List->SetGraphicsRootShaderResourceView(2, m_pd3d_CB_Objects->GetGPUVirtualAddress());
+
+	for (int i = 0; i < m_nObjects; ++i) {
+		m_pCB_Mapped_Objects[i].m_xmf4_Color = (i % 2) ? DirectX::XMFLOAT4(0.5f, 0.0f, 0.0f, 0.0f) : DirectX::XMFLOAT4(0.0f, 0.0f, 0.5f, 0.0f);
+
+		DirectX::XMStoreFloat4x4(&m_pCB_Mapped_Objects[i].m_xmf4x4_Transform, DirectX::XMMatrixTranspose(DirectX::XMLoadFloat4x4(&m_ppObjects[i]->Get_World_Matrix())));
+	}
+}
+
+void CInstancing_Shader::Release_Shader_Variables() {
+	if (m_pd3d_CB_Objects) {
+		m_pd3d_CB_Objects->Unmap(0, NULL);
+	}
+
+	if (m_pd3d_CB_Objects) {
+		m_pd3d_CB_Objects->Release();
+	}
+}
+
+void CInstancing_Shader::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
+	int Objects_x = 10;
+	int Objects_y = 10;
+	int Objects_z = 10;
+	int i = 0;
+
+	m_nObjects = (Objects_x * 2 + 1) * (Objects_y * 2 + 1) * (Objects_z * 2 + 1);
+
+	m_ppObjects = new CObject * [m_nObjects];
+
+	float fPitch_x = 12.0f * 2.5f;
+	float fPitch_y = 12.0f * 2.5f;
+	float fPitch_z = 12.0f * 2.5f;
+
+	CRotating_Object* pRotating_Object = NULL;
+
+	for (int x = -Objects_x; x <= Objects_x; ++x) {
+		for (int y = -Objects_y; y <= Objects_y; ++y) {
+			for (int z = -Objects_z; z <= Objects_z; ++z) {
+				pRotating_Object = new CRotating_Object();
+				pRotating_Object->Set_Position(fPitch_x * x, fPitch_y * y, fPitch_z * z);
+				pRotating_Object->Set_Rotation_Axis(DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
+				pRotating_Object->Set_Rotation_Speed(10.0f * (i % 10));
+				m_ppObjects[i++] = pRotating_Object;
+			}
+		}
+	}
+
+	CCube_Mesh* pCube_Mesh = new CCube_Mesh(pd3d_Device, pd3d_Command_List, 12.0f, 12.0f, 12.0f);
+
+	m_ppObjects[0]->Set_Mesh(pCube_Mesh);
+
+	Crt_Shader_Variables(pd3d_Device, pd3d_Command_List);
+}
+
+void CInstancing_Shader::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera) {
+	CShader::Render(pd3d_Command_List, pCamera);
+
+	Udt_Shader_Variables(pd3d_Command_List);
+
+	m_ppObjects[0]->Render(pd3d_Command_List, pCamera, m_nObjects);
 }

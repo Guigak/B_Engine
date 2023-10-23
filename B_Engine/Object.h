@@ -40,6 +40,7 @@ public :
 
 	virtual void Prepare_Render();
 	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera, UINT nInstances);
 
 	void Rotate(DirectX::XMFLOAT3* pxmf3_Axis, float fAngle);
 
@@ -61,6 +62,9 @@ public :
 	void Move_Forward(float fDistance = 1.0f);
 
 	void Rotate(float fPitch = 10.0f, float fYaw = 10.0f, float fRoll = 10.0f);
+
+	//
+	virtual DirectX::XMFLOAT4X4 Get_World_Matrix() { return m_xmf4x4_World; };
 };
 
 class CRotating_Object : public CObject {

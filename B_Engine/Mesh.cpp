@@ -32,16 +32,29 @@ void CMesh::Release_Upload_Buffers() {
 	m_pd3d_Index_Upload_Buffer = NULL;
 }
 
-void CMesh::Render(ID3D12GraphicsCommandList* pd3d_Command_List) {
-	pd3d_Command_List->IASetPrimitiveTopology(m_d3d_Primitive_Topology);
+//void CMesh::Render(ID3D12GraphicsCommandList* pd3d_Command_List) {
+//	pd3d_Command_List->IASetPrimitiveTopology(m_d3d_Primitive_Topology);
+//	pd3d_Command_List->IASetVertexBuffers(m_nSlot, 1, &m_d3d_Vertex_Buffer_View);
+//
+//	if (m_pd3d_Index_Buffer) {
+//		pd3d_Command_List->IASetIndexBuffer(&m_d3d_Index_Buffer_View);
+//		pd3d_Command_List->DrawIndexedInstanced(m_nIndices, 1, 0, 0, 0);
+//	}
+//	else {
+//		pd3d_Command_List->DrawInstanced(m_nVertices, 1, m_nOffset, 0);
+//	}
+//}
+
+void CMesh::Render(ID3D12GraphicsCommandList* pd3d_Command_List, UINT nInstances) {
 	pd3d_Command_List->IASetVertexBuffers(m_nSlot, 1, &m_d3d_Vertex_Buffer_View);
+	pd3d_Command_List->IASetPrimitiveTopology(m_d3d_Primitive_Topology);
 
 	if (m_pd3d_Index_Buffer) {
 		pd3d_Command_List->IASetIndexBuffer(&m_d3d_Index_Buffer_View);
-		pd3d_Command_List->DrawIndexedInstanced(m_nIndices, 1, 0, 0, 0);
+		pd3d_Command_List->DrawIndexedInstanced(m_nIndices, nInstances, 0, 0, 0);
 	}
 	else {
-		pd3d_Command_List->DrawInstanced(m_nVertices, 1, m_nOffset, 0);
+		pd3d_Command_List->DrawInstanced(m_nVertices, nInstances, m_nOffset, 0);
 	}
 }
 

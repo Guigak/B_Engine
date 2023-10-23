@@ -66,6 +66,14 @@ void CObject::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCam
 	}
 }
 
+void CObject::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera, UINT nInstances) {
+	Prepare_Render();
+
+	if (m_pMesh) {
+		m_pMesh->Render(pd3d_Command_List, nInstances);
+	}
+}
+
 void CObject::Rotate(DirectX::XMFLOAT3* pxmf3_Axis, float fAngle) {
 	DirectX::XMMATRIX xmmtx_Rotate = DirectX::XMMatrixRotationAxis(DirectX::XMLoadFloat3(pxmf3_Axis), DirectX::XMConvertToRadians(fAngle));
 	m_xmf4x4_World = Matrix4x4::Multiply(xmmtx_Rotate, m_xmf4x4_World);

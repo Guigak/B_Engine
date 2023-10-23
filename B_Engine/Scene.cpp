@@ -17,7 +17,7 @@ bool CScene::Prcs_Msg_Keyboard(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARAM lP
 ID3D12RootSignature* CScene::Crt_Graphics_RootSignature(ID3D12Device* pd3d_Device) {
 	ID3D12RootSignature* pd3d_Graphics_RootSignature = NULL;
 
-	D3D12_ROOT_PARAMETER pd3d_RootParameters[2];
+	D3D12_ROOT_PARAMETER pd3d_RootParameters[3];
 	pd3d_RootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	pd3d_RootParameters[0].Constants.Num32BitValues = 16;
 	pd3d_RootParameters[0].Constants.ShaderRegister = 0;
@@ -28,6 +28,10 @@ ID3D12RootSignature* CScene::Crt_Graphics_RootSignature(ID3D12Device* pd3d_Devic
 	pd3d_RootParameters[1].Constants.ShaderRegister = 1;
 	pd3d_RootParameters[1].Constants.RegisterSpace = 0;
 	pd3d_RootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	pd3d_RootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_SRV;
+	pd3d_RootParameters[2].Descriptor.ShaderRegister = 0;
+	pd3d_RootParameters[2].Descriptor.RegisterSpace = 0;
+	pd3d_RootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 
 	D3D12_ROOT_SIGNATURE_FLAGS d3d_RootSignature_Flags =
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
@@ -75,7 +79,7 @@ void CScene::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList*
 	m_pd3d_Graphics_RootSignature = Crt_Graphics_RootSignature(pd3d_Device);
 
 	m_nShaders = 1;
-	m_pShaders = new CObjects_Shader[m_nShaders];
+	m_pShaders = new CInstancing_Shader[m_nShaders];
 	m_pShaders[0].Crt_Shader(pd3d_Device, m_pd3d_Graphics_RootSignature);
 	m_pShaders[0].Build_Objects(pd3d_Device, pd3d_Command_List);
 }
