@@ -344,14 +344,12 @@ void CFramework::Crt_Dsv() {
 void CFramework::Build_Objects() {
 	m_pd3d_Command_List->Reset(m_pd3d_Command_Allocator, NULL);
 
-	m_pCamera = new CCamera;
-	m_pCamera->Set_Viewport(0, 0, m_nWndClient_Width, m_nWndClient_Height, 0.0f, 1.0f);
-	m_pCamera->Set_ScissorRect(0, 0, m_nWndClient_Width, m_nWndClient_Height);
-	m_pCamera->Gernerate_projection_Matrix(90.0f, ASPECT_RATIO, 1.0f, 500.0f);
-	m_pCamera->Generate_View_Matrix(DirectX::XMFLOAT3(0.0f, 0.0f, -50.0f), DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
-
 	m_pScene = new CScene();
 	m_pScene->Build_Objects(m_pd3d_Device, m_pd3d_Command_List);
+
+	CAirplane_Player* pAirplane_Player = new CAirplane_Player(m_pd3d_Device, m_pd3d_Command_List, m_pScene->Get_Graphics_RootSignature());
+	m_pPlayer = pAirplane_Player;
+	m_pCamera = m_pPlayer->Get_Camera();
 
 	m_pd3d_Command_List->Close();
 	ID3D12CommandList* ppd3d_Command_Lists[] = { m_pd3d_Command_List };
@@ -371,9 +369,66 @@ void CFramework::Release_Objects() {
 		m_pScene->Release_Objects();
 		delete m_pScene;
 	}
+	
+	if (m_pPlayer) {
+		m_pPlayer->Release();
+	}
 }
 
 void CFramework::Prcs_Input() {
+	static UCHAR pKey_Buffer[256];
+	DWORD dwDirection = 0;
+
+	if (GetKeyboardState(pKey_Buffer)) {
+		if (pKey_Buffer[VK_UP] & 0xF0) {
+			dwDirection |= DIRECT_FORWARD;
+		}
+		if (pKey_Buffer[VK_DOWN] & 0xF0) {
+			dwDirection |= DIRECT_BACKWARD;
+		}
+		if (pKey_Buffer[VK_LEFT] & 0xF0) {
+			dwDirection |= DIRECT_LEFT;
+		}
+		if (pKey_Buffer[VK_RIGHT] & 0xF0) {
+			dwDirection |= DIRECT_RIGHT;
+		}
+		if (pKey_Buffer[VK_PRIOR] & 0xF0) {
+			dwDirection |= DIRECT_UP;
+		}
+		if (pKey_Buffer[VK_NEXT] & 0xF0) {
+			dwDirection |= DIRECT_DOWN;
+		}
+	}
+
+	float cxDelta = 0.0f;
+	float cyDelta = 0.0f;
+	POINT ptCursor_Pos;
+
+	if (GetCapture() == m_hWnd) {
+		SetCursor(NULL);
+		GetCursorPos(&ptCursor_Pos);
+
+		cxDelta = (float)(ptCursor_Pos.x - m_ptOld_Cursor_Pos.x) / 3.0f;
+		cyDelta = (float)(ptCursor_Pos.y - m_ptOld_Cursor_Pos.y) / 3.0f;
+
+		SetCursorPos(m_ptOld_Cursor_Pos.x, m_ptOld_Cursor_Pos.y);
+	}
+
+	if ((dwDirection != 0) || (cxDelta != 0.0f) || (cyDelta != 0.0f)) {
+		if (cxDelta || cyDelta) {
+			if (pKey_Buffer[VK_RBUTTON] & 0xF0) {
+				m_pPlayer->Rotate(cyDelta, 0.0f, -cxDelta);
+			}
+			else {
+				m_pPlayer->Rotate(cyDelta, cxDelta, 0.0f);
+			}
+		}
+		if (dwDirection) {
+			m_pPlayer->Move(dwDirection, 5000.0f * m_Timer.Get_Elapsed_Time(), true);
+		}
+	}
+
+	m_pPlayer->Update(m_Timer.Get_Elapsed_Time());
 }
 
 void CFramework::Anim_Objects() {
@@ -382,6 +437,8 @@ void CFramework::Anim_Objects() {
 	}
 }
 
+
+//#define _WITH_PLAYER_TOP
 void CFramework::Adavance_Frame() {
 	m_Timer.Tick(0.0f);
 
@@ -419,6 +476,14 @@ void CFramework::Adavance_Frame() {
 	// render
 	if (m_pScene) {
 		m_pScene->Render(m_pd3d_Command_List, m_pCamera);
+	}
+
+#ifdef _WITH_PLAYER_TOP
+	m_pd3d_Command_List->ClearDepthStencilView(d3d_Dsv_CPU_Descriptor_Handle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+#endif
+
+	if (m_pPlayer) {
+		m_pPlayer->Render(m_pd3d_Command_List, m_pCamera);
 	}
 
 	d3d_ResourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -463,9 +528,12 @@ void CFramework::Prcs_Msg_Mouse(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARAM l
 	switch (nMsg_ID) {
 	case WM_LBUTTONDOWN :
 	case WM_RBUTTONDOWN :
+		SetCapture(hWnd);
+		GetCursorPos(&m_ptOld_Cursor_Pos);
 		break;
 	case WM_LBUTTONUP :
 	case WM_RBUTTONUP :
+		ReleaseCapture();
 		break;
 	case WM_MOUSEMOVE :
 		break;
@@ -482,6 +550,14 @@ void CFramework::Prcs_Msg_Keyboard(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARA
 			PostQuitMessage(0);
 			break;
 		case VK_RETURN:
+			break;
+		case VK_F1:
+		case VK_F2:
+		case VK_F3:
+			if (m_pPlayer) {
+				m_pCamera = m_pPlayer->Chg_Camera((wParam - VK_F1 + 1), m_Timer.Get_Elapsed_Time());
+			}
+
 			break;
 		case VK_F8:
 			break;

@@ -93,3 +93,10 @@ public :
 	CCube_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fWidth = 2.0f, float fHeight = 2.0f, float fDepth = 2.0f);
 	virtual ~CCube_Mesh();
 };
+
+//
+class CAirPlane_Mesh : public CMesh {
+public:
+	CAirPlane_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fWidth = 20.0f, float fHeight = 20.0f, float fDepth = 4.0f, DirectX::XMFLOAT4 xmf4_Color = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f));
+	virtual ~CAirPlane_Mesh();
+};

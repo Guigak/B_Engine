@@ -15,7 +15,7 @@ CTimer::CTimer() {
 	m_nSample_Count = 0;
 	m_nCurrent_FrameRate = 0;
 	m_nFPS = 0;
-	m_fTime_Cal_FPS = 0;
+	m_fTime_Cal_FPS = 0.0f;
 }
 
 CTimer::~CTimer() {

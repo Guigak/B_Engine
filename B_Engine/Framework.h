@@ -4,6 +4,7 @@
 #include "Timer.h"
 #include "Scene.h"
 #include "Camera.h"
+#include "Player.h"
 
 class CFramework {
 private :
@@ -101,5 +102,12 @@ public :
 	// about Scene
 public :
 	void Move_2_Next_Frame();
+
+	// player
+public :
+	CPlayer* m_pPlayer = NULL;
+
+	// mouse point
+	POINT m_ptOld_Cursor_Pos;
 };
 

@@ -56,7 +56,7 @@ public :
 	void Set_Position(float x, float y, float z);
 	void Set_Position(DirectX::XMFLOAT3 xmf3_Position);
 
-	void Move_right(float fDistance = 1.0f);
+	void Move_Right(float fDistance = 1.0f);
 	void Move_Up(float fDistance = 1.0f);
 	void Move_Forward(float fDistance = 1.0f);
 
@@ -72,12 +72,8 @@ public :
 	CRotating_Object();
 	virtual ~CRotating_Object();
 
-	void Set_Rotation_Axis(DirectX::XMFLOAT3 xmf3_Rotation_Axis) {
-		m_xmf3_Rotation_Axis = xmf3_Rotation_Axis;
-	}
-	void Set_Rotation_Speed(float fRotation_Speed) {
-		m_fRotation_Speed = fRotation_Speed;
-	}
+	void Set_Rotation_Axis(DirectX::XMFLOAT3 xmf3_Rotation_Axis) { m_xmf3_Rotation_Axis = xmf3_Rotation_Axis; }
+	void Set_Rotation_Speed(float fRotation_Speed) { m_fRotation_Speed = fRotation_Speed; }
 
 	virtual void Anim(float fElapsed_Time);
 };

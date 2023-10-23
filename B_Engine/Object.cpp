@@ -110,7 +110,7 @@ void CObject::Set_Position(DirectX::XMFLOAT3 xmf3_Position) {
 	Set_Position(xmf3_Position.x, xmf3_Position.y, xmf3_Position.z);
 }
 
-void CObject::Move_right(float fDistance) {
+void CObject::Move_Right(float fDistance) {
 	DirectX::XMFLOAT3 xmf3_Position = Get_Position();
 	DirectX::XMFLOAT3 xmf3_Right = Get_Right();
 	xmf3_Position = Vector3::Add(xmf3_Position, xmf3_Right, fDistance);
@@ -142,7 +142,7 @@ void CObject::Rotate(float fPitch, float fYaw, float fRoll) {
 //
 CRotating_Object::CRotating_Object() {
 	m_xmf3_Rotation_Axis = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);
-	m_fRotation_Speed = 180.0f;
+	m_fRotation_Speed = 90.0f;
 }
 
 CRotating_Object::~CRotating_Object() {

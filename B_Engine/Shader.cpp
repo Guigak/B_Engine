@@ -312,7 +312,7 @@ void CObjects_Shader::Build_Objects(ID3D12Device* pd3d_Device, ID3D12GraphicsCom
 				pRotating_Object->Set_Mesh(pCube_Mesh);
 				pRotating_Object->Set_Position(fx_Pitch * x, fy_Pitch * y, fz_Pitch * z);
 				pRotating_Object->Set_Rotation_Axis(DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f));
-				pRotating_Object->Set_Rotation_Speed((10.0f * (i % 10) + 3.0f) * 20.0f);
+				pRotating_Object->Set_Rotation_Speed((10.0f * (i % 10) + 3.0f) * 1.0f);
 
 				m_ppObjects[i++] = pRotating_Object;
 			}
