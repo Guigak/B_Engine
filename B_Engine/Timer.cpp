@@ -77,10 +77,10 @@ void CTimer::Tick(float fLock_FPS) {
 	m_fElapsed_Time = 0.0f;
 	for (ULONG i = 0; i < m_nSample_Count; ++i) {
 		m_fElapsed_Time += m_fFrame_Time[i];
+	}
 
-		if (m_nSample_Count > 0) {
-			m_fElapsed_Time /= m_nSample_Count;
-		}
+	if (m_nSample_Count > 0) {
+		m_fElapsed_Time /= m_nSample_Count;
 	}
 }
 
