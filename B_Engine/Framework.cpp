@@ -415,16 +415,21 @@ void CFramework::Prcs_Input() {
 	}
 
 	if ((dwDirection != 0) || (cxDelta != 0.0f) || (cyDelta != 0.0f)) {
-		if (cxDelta || cyDelta) {
-			if (pKey_Buffer[VK_RBUTTON] & 0xF0) {
-				m_pPlayer->Rotate(cyDelta, 0.0f, -cxDelta);
-			}
-			else {
-				m_pPlayer->Rotate(cyDelta, cxDelta, 0.0f);
-			}
+		if (m_pSelected_Object) {
+			Prcs_Selected_Object(dwDirection, cxDelta, cyDelta);
 		}
-		if (dwDirection) {
-			m_pPlayer->Move(dwDirection, 5000.0f * m_Timer.Get_Elapsed_Time(), true);
+		else {
+			if (cxDelta || cyDelta) {
+				if (pKey_Buffer[VK_RBUTTON] & 0xF0) {
+					m_pPlayer->Rotate(cyDelta, 0.0f, -cxDelta);
+				}
+				else {
+					m_pPlayer->Rotate(cyDelta, cxDelta, 0.0f);
+				}
+			}
+			if (dwDirection) {
+				m_pPlayer->Move(dwDirection, 5000.0f * m_Timer.Get_Elapsed_Time(), true);
+			}
 		}
 	}
 
@@ -528,6 +533,8 @@ void CFramework::Prcs_Msg_Mouse(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARAM l
 	switch (nMsg_ID) {
 	case WM_LBUTTONDOWN :
 	case WM_RBUTTONDOWN :
+		m_pSelected_Object = m_pScene->Pick_Object_Pointed_By_Cursor(LOWORD(lParam), HIWORD(lParam), m_pCamera);
+
 		SetCapture(hWnd);
 		GetCursorPos(&m_ptOld_Cursor_Pos);
 		break;
@@ -555,7 +562,7 @@ void CFramework::Prcs_Msg_Keyboard(HWND hWnd, UINT nMsg_ID, WPARAM wParam, LPARA
 		case VK_F2:
 		case VK_F3:
 			if (m_pPlayer) {
-				m_pCamera = m_pPlayer->Chg_Camera((wParam - VK_F1 + 1), m_Timer.Get_Elapsed_Time());
+				m_pCamera = m_pPlayer->Chg_Camera(((DWORD)wParam - VK_F1 + 1), m_Timer.Get_Elapsed_Time());
 			}
 
 			break;
@@ -631,4 +638,30 @@ void CFramework::Move_2_Next_Frame() {
 	m_nSwapChainBuffer_Index = m_pdxgi_SwapChain->GetCurrentBackBufferIndex();
 
 	Wait_4_GPU_Complete();
+}
+
+void CFramework::Prcs_Selected_Object(DWORD dwDirection, float fDelta_x, float fDelta_y) {
+	if (dwDirection != 0) {
+		if (dwDirection & DIRECT_FORWARD) {
+			m_pSelected_Object->Move_Forward(1.0f);
+		}
+		if (dwDirection & DIRECT_BACKWARD) {
+			m_pSelected_Object->Move_Forward(-1.0f);
+		}
+		if (dwDirection & DIRECT_LEFT) {
+			m_pSelected_Object->Move_Right(-1.0f);
+		}
+		if (dwDirection & DIRECT_RIGHT) {
+			m_pSelected_Object->Move_Forward(1.0f);
+		}
+		if (dwDirection & DIRECT_UP) {
+			m_pSelected_Object->Move_Up(1.0f);
+		}
+		if (dwDirection & DIRECT_DOWN) {
+			m_pSelected_Object->Move_Up(-1.0f);
+		}
+	}
+	else if ((fDelta_x != 0.0f) || (fDelta_y != 0.0f)) {
+		m_pSelected_Object->Rotate(fDelta_y, fDelta_x, 0.0f);
+	}
 }

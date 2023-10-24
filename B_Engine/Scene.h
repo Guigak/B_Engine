@@ -40,5 +40,8 @@ public :
 
 	//void Crt_Graphics_Pipeline_State(ID3D12Device* pd3d_Device);	// unused
 	//ID3D12PipelineState* m_pd3d_Graphics_Pipeline_State = NULL;	//unused
+
+	//
+	CObject* Pick_Object_Pointed_By_Cursor(int Client_x, int Client_y, CCamera* pCamera);
 };
 

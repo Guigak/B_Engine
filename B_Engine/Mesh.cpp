@@ -18,6 +18,14 @@ CMesh::~CMesh() {
 	if (m_pd3d_Index_Upload_Buffer) {
 		m_pd3d_Index_Upload_Buffer->Release();
 	}
+
+	//
+	if (m_pVertices) {
+		delete[] m_pVertices;
+	}
+	if (m_pnIndices) {
+		delete[] m_pnIndices;
+	}
 }
 
 void CMesh::Release_Upload_Buffers() {
@@ -58,6 +66,46 @@ void CMesh::Render(ID3D12GraphicsCommandList* pd3d_Command_List, UINT nInstances
 	}
 }
 
+int CMesh::Chk_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Ray_Position, DirectX::XMFLOAT3& xmf3_Ray_Direction, float* pfNear_Hit_Distance) {
+	int nIntersections = 0;
+	BYTE* pbPositions = (BYTE*)m_pVertices;
+
+	int nOffset = (m_d3d_Primitive_Topology == D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ? 3 : 1;
+	int nPrimitives = (m_d3d_Primitive_Topology == D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ? (m_nVertices / 3) : (m_nVertices - 2);
+	if (m_nIndices > 0) {
+		nPrimitives = (m_d3d_Primitive_Topology == D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) ? (m_nIndices / 3) : (m_nIndices - 2);
+	}
+
+	DirectX::XMVECTOR xmv_Ray_Position = DirectX::XMLoadFloat3(&xmf3_Ray_Position);
+	DirectX::XMVECTOR xmv_Ray_Direction = DirectX::XMLoadFloat3(&xmf3_Ray_Direction);
+
+	// transform?
+	bool bIntersected = m_xmOOBB.Intersects(xmv_Ray_Position, xmv_Ray_Direction, *pfNear_Hit_Distance);
+
+	if (bIntersected) {
+		float fNear_Hit_Distance = FLT_MAX;
+
+		for (int i = 0; i < nPrimitives; ++i) {
+			DirectX::XMVECTOR v0 = DirectX::XMLoadFloat3((DirectX::XMFLOAT3*)(pbPositions + ((m_pnIndices) ? (m_pnIndices[(i * nOffset) + 0]) : ((i * nOffset) + 0)) * m_nStride));
+			DirectX::XMVECTOR v1 = DirectX::XMLoadFloat3((DirectX::XMFLOAT3*)(pbPositions + ((m_pnIndices) ? (m_pnIndices[(i * nOffset) + 1]) : ((i * nOffset) + 1)) * m_nStride));
+			DirectX::XMVECTOR v2 = DirectX::XMLoadFloat3((DirectX::XMFLOAT3*)(pbPositions + ((m_pnIndices) ? (m_pnIndices[(i * nOffset) + 2]) : ((i * nOffset) + 2)) * m_nStride));
+
+			float fHit_Distance;
+			BOOL bIntersected = DirectX::TriangleTests::Intersects(xmv_Ray_Position, xmv_Ray_Direction, v0, v1, v2, fHit_Distance);
+
+			if (bIntersected) {
+				if (fHit_Distance < fNear_Hit_Distance) {
+					*pfNear_Hit_Distance = fNear_Hit_Distance = fHit_Distance;
+				}
+
+				++nIntersections;
+			}
+		}
+	}
+
+	return nIntersections;
+}
+
 CTriangle_Mesh::CTriangle_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List) {
 	m_nVertices = 3;
 	m_nStride = sizeof(CDiffused_Vertex);
@@ -84,17 +132,17 @@ CCube_Mesh::CCube_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3
 	float fy = fHeight * 0.5f;
 	float fz = fDepth * 0.5f;
 
-	CDiffused_Vertex pVertices[8];
-	pVertices[0] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
-	pVertices[1] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
-	pVertices[2] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
-	pVertices[3] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
-	pVertices[4] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
-	pVertices[5] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
-	pVertices[6] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
-	pVertices[7] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
+	m_pVertices = new CDiffused_Vertex[m_nVertices];
+	m_pVertices[0] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, -fz), RANDOM_COLOR);
+	m_pVertices[1] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, -fz), RANDOM_COLOR);
+	m_pVertices[2] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, +fy, +fz), RANDOM_COLOR);
+	m_pVertices[3] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, +fy, +fz), RANDOM_COLOR);
+	m_pVertices[4] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, -fz), RANDOM_COLOR);
+	m_pVertices[5] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, -fz), RANDOM_COLOR);
+	m_pVertices[6] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -fy, +fz), RANDOM_COLOR);
+	m_pVertices[7] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -fy, +fz), RANDOM_COLOR);
 
-	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
+	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, m_pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
 
 	m_d3d_Vertex_Buffer_View.BufferLocation = m_pd3d_Vertex_Buffer->GetGPUVirtualAddress();
 	m_d3d_Vertex_Buffer_View.StrideInBytes = m_nStride;
@@ -102,61 +150,64 @@ CCube_Mesh::CCube_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3
 
 	//
 	m_nIndices = 36;
-	UINT pnIndices[36];
+	m_pnIndices = new UINT[m_nIndices];
 
 	//front
-	pnIndices[0] = 3;
-	pnIndices[1] = 1;
-	pnIndices[2] = 0;
-	pnIndices[3] = 2;
-	pnIndices[4] = 1;
-	pnIndices[5] = 3;
+	m_pnIndices[0] = 3;
+	m_pnIndices[1] = 1;
+	m_pnIndices[2] = 0;
+	m_pnIndices[3] = 2;
+	m_pnIndices[4] = 1;
+	m_pnIndices[5] = 3;
 
 	// top
-	pnIndices[6] = 0;
-	pnIndices[7] = 5;
-	pnIndices[8] = 4;
-	pnIndices[9] = 1;
-	pnIndices[10] = 5;
-	pnIndices[11] = 0;
+	m_pnIndices[6] = 0;
+	m_pnIndices[7] = 5;
+	m_pnIndices[8] = 4;
+	m_pnIndices[9] = 1;
+	m_pnIndices[10] = 5;
+	m_pnIndices[11] = 0;
 
 	// back
-	pnIndices[12] = 3;
-	pnIndices[13] = 4;
-	pnIndices[14] = 7;
-	pnIndices[15] = 0;
-	pnIndices[16] = 4;
-	pnIndices[17] = 3;
+	m_pnIndices[12] = 3;
+	m_pnIndices[13] = 4;
+	m_pnIndices[14] = 7;
+	m_pnIndices[15] = 0;
+	m_pnIndices[16] = 4;
+	m_pnIndices[17] = 3;
 
 	// bottom
-	pnIndices[18] = 1;
-	pnIndices[19] = 6;
-	pnIndices[20] = 5;
-	pnIndices[21] = 2;
-	pnIndices[22] = 6;
-	pnIndices[23] = 1;
+	m_pnIndices[18] = 1;
+	m_pnIndices[19] = 6;
+	m_pnIndices[20] = 5;
+	m_pnIndices[21] = 2;
+	m_pnIndices[22] = 6;
+	m_pnIndices[23] = 1;
 
 	// left
-	pnIndices[24] = 2;
-	pnIndices[25] = 7;
-	pnIndices[26] = 6;
-	pnIndices[27] = 3;
-	pnIndices[28] = 7;
-	pnIndices[29] = 2;
+	m_pnIndices[24] = 2;
+	m_pnIndices[25] = 7;
+	m_pnIndices[26] = 6;
+	m_pnIndices[27] = 3;
+	m_pnIndices[28] = 7;
+	m_pnIndices[29] = 2;
 
 	// right
-	pnIndices[30] = 6;
-	pnIndices[31] = 4;
-	pnIndices[32] = 5;
-	pnIndices[33] = 7;
-	pnIndices[34] = 4;
-	pnIndices[35] = 6;
+	m_pnIndices[30] = 6;
+	m_pnIndices[31] = 4;
+	m_pnIndices[32] = 5;
+	m_pnIndices[33] = 7;
+	m_pnIndices[34] = 4;
+	m_pnIndices[35] = 6;
 
-	m_pd3d_Index_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, pnIndices, sizeof(UINT) * m_nIndices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_pd3d_Index_Upload_Buffer);
+	m_pd3d_Index_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, m_pnIndices, sizeof(UINT) * m_nIndices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_pd3d_Index_Upload_Buffer);
 
 	m_d3d_Index_Buffer_View.BufferLocation = m_pd3d_Index_Buffer->GetGPUVirtualAddress();
 	m_d3d_Index_Buffer_View.Format = DXGI_FORMAT_R32_UINT;
 	m_d3d_Index_Buffer_View.SizeInBytes = sizeof(UINT) * m_nIndices;
+
+	//
+	m_xmOOBB = DirectX::BoundingOrientedBox(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(fx, fy, fz), DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 CCube_Mesh::~CCube_Mesh()
@@ -176,7 +227,7 @@ CAirPlane_Mesh::CAirPlane_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandL
 	float fy = fHeight * 0.5f;
 	float fz = fDepth * 0.5f;
 
-	CDiffused_Vertex pVertices[24 * 3];
+	m_pVertices = new CDiffused_Vertex[m_nVertices];
 
 	float x1 = fx * 0.2f;
 	float y1 = fy * 0.2f;
@@ -187,95 +238,172 @@ CAirPlane_Mesh::CAirPlane_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandL
 	int i = 0;
 
 	// top
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz),	Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz),	Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
 	// bottom
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
 	// right
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
 	// back right
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(+x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
 	// left
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, +(fy + y3), +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x2, +y2, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
 	// back left
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
-	pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(0.0f, 0.0f, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-x1, -y1, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, +fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
+	m_pVertices[i++] = CDiffused_Vertex(DirectX::XMFLOAT3(-fx, -y3, -fz), Vector4::Add(xmf4_Color, RANDOM_COLOR));
 
-	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
+	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, m_pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
 
 	m_d3d_Vertex_Buffer_View.BufferLocation = m_pd3d_Vertex_Buffer->GetGPUVirtualAddress();
 	m_d3d_Vertex_Buffer_View.StrideInBytes = m_nStride;
 	m_d3d_Vertex_Buffer_View.SizeInBytes = m_nStride * m_nVertices;
+
+	//
+	m_xmOOBB = DirectX::BoundingOrientedBox(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(fx, fy, fz), DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
 }
 
 CAirPlane_Mesh::~CAirPlane_Mesh() {
+}
+
+CSphere_Mesh::CSphere_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fRadius, int nSlices, int nStacks) : CMesh(pd3d_Device, pd3d_Command_List) {
+	m_nStride = sizeof(CDiffused_Vertex);
+	m_d3d_Primitive_Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+
+	m_nVertices = 2 + (nSlices * (nStacks - 1));
+	m_pVertices = new CDiffused_Vertex[m_nVertices];
+
+	float fDelta_Phi = float(DirectX::XM_PI / nStacks);
+	float fDelta_Theta = float((2.0f * DirectX::XM_PI) / nSlices);
+
+	int k = 0;
+	m_pVertices[k++] = CDiffused_Vertex(0.0f, fRadius, 0.0f, RANDOM_COLOR);
+
+	float i_theta, j_phi;
+	for (int j = 1; j < nStacks; ++j) {
+		j_phi = fDelta_Phi * j;
+
+		for (int i = 0; i < nSlices; ++i) {
+			i_theta = fDelta_Theta * i;
+
+			m_pVertices[k++] = CDiffused_Vertex(fRadius * sinf(j_phi) * cosf(i_theta), fRadius * cosf(j_phi), fRadius * sinf(j_phi) * sinf(i_theta), RANDOM_COLOR);
+		}
+	}
+
+	m_pVertices[k] = CDiffused_Vertex(0.0f, -fRadius, 0.0f, RANDOM_COLOR);
+
+	m_pd3d_Vertex_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, m_pVertices, m_nStride * m_nVertices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, &m_pd3d_Vertex_Upload_Buffer);
+
+	m_d3d_Vertex_Buffer_View.BufferLocation = m_pd3d_Vertex_Buffer->GetGPUVirtualAddress();
+	m_d3d_Vertex_Buffer_View.StrideInBytes = m_nStride;
+	m_d3d_Vertex_Buffer_View.SizeInBytes = m_nStride * m_nVertices;
+
+	//
+	m_nIndices = (nSlices * 3) * 2 + (nSlices * (nStacks - 2) * 3 * 2);
+	m_pnIndices = new UINT[m_nIndices];
+
+	k = 0;
+	for (int i = 0; i < nSlices; ++i) {
+		m_pnIndices[k++] = 0;
+		m_pnIndices[k++] = 1 + ((i + 1) % nSlices);
+		m_pnIndices[k++] = 1 + i;
+	}
+
+	for (int j = 0; j < nStacks; ++j) {
+		for (int i = 0; i < nSlices; ++i) {
+			m_pnIndices[k++] = 1 + (i + (j * nSlices));
+			m_pnIndices[k++] = 1 + ((i + 1) % nSlices) + (j * nSlices);
+			m_pnIndices[k++] = 1 + (i + ((j + 1) * nSlices));
+
+			m_pnIndices[k++] = 1 + (i + ((j + 1) * nSlices));
+			m_pnIndices[k++] = 1 + (((i + 1) % nSlices) + (j * nSlices));
+			m_pnIndices[k++] = 1 + (((i + 1) % nSlices) + ((j + 1) * nSlices));
+		}
+	}
+
+	for (int i = 0; i < nSlices; ++i) {
+		m_pnIndices[k++] = m_nVertices - 1;
+		m_pnIndices[k++] = ((m_nVertices - 1) - nSlices) + i;
+		m_pnIndices[k++] = ((m_nVertices - 1) - nSlices) + ((i + 1) % nSlices);
+	}
+
+	m_pd3d_Index_Buffer = Crt_Buffer_Resource(pd3d_Device, pd3d_Command_List, m_pnIndices, sizeof(UINT) * m_nIndices, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, &m_pd3d_Index_Upload_Buffer);
+
+	m_d3d_Index_Buffer_View.BufferLocation = m_pd3d_Index_Buffer->GetGPUVirtualAddress();
+	m_d3d_Index_Buffer_View.Format = DXGI_FORMAT_R32_UINT;
+	m_d3d_Index_Buffer_View.SizeInBytes = sizeof(UINT) * m_nIndices;
+
+	//
+	m_xmOOBB = DirectX::BoundingOrientedBox(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f), DirectX::XMFLOAT3(fRadius, fRadius, fRadius), DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f));
+}
+
+CSphere_Mesh::~CSphere_Mesh() {
 }

@@ -387,6 +387,24 @@ void CObjects_Shader::Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCame
 	}
 }
 
+CObject* CObjects_Shader::Pick_Object_By_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, float* pfNear_Hit_Distance) {
+	int nIntersected = 0;
+	*pfNear_Hit_Distance = FLT_MAX;
+	float fHit_Distance = FLT_MAX;
+	CObject* pSelected_Object = NULL;
+
+	for (int i = 0; i < m_nObjects; ++i) {
+		nIntersected = m_ppObjects[i]->Pick_Object_By_Ray_Intersection(xmf3_Pick_Position, xmf4x4_View, &fHit_Distance, m_ppObjects[0]->Get_Mesh());
+
+		if ((nIntersected > 0) && (fHit_Distance < *pfNear_Hit_Distance)) {
+			*pfNear_Hit_Distance = fHit_Distance;
+			pSelected_Object = m_ppObjects[i];
+		}
+	}
+
+	return pSelected_Object;
+}
+
 //
 CInstancing_Shader::CInstancing_Shader() {
 }

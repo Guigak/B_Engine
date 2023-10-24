@@ -147,6 +147,35 @@ void CObject::Rotate(float fPitch, float fYaw, float fRoll) {
 	m_xmf4x4_World = Matrix4x4::Multiply(xmmtx_Rotate, m_xmf4x4_World);
 }
 
+void CObject::Generate_Ray_4_Picking(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, DirectX::XMFLOAT3* pxmf3_Pick_Ray_Position, DirectX::XMFLOAT3* pxmf3_Pick_Ray_Direction) {
+	DirectX::XMFLOAT4X4 xmf4x4_World_View = Matrix4x4::Multiply(m_xmf4x4_World, xmf4x4_View);
+	DirectX::XMFLOAT4X4 xmf4x4_Inverse = Matrix4x4::Inverse(xmf4x4_World_View);
+	DirectX::XMFLOAT3 xmf3_Camera_Position(0.0f, 0.0f, 0.0f);
+
+	*pxmf3_Pick_Ray_Position = Vector3::Transform_Coord(xmf3_Camera_Position, xmf4x4_Inverse);
+	*pxmf3_Pick_Ray_Direction = Vector3::Transform_Coord(xmf3_Pick_Position, xmf4x4_Inverse);
+	*pxmf3_Pick_Ray_Direction = Vector3::Normalize(Vector3::Subtract(*pxmf3_Pick_Ray_Direction, *pxmf3_Pick_Ray_Position));
+}
+
+int CObject::Pick_Object_By_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, float* pfHit_Distance, CMesh* pMesh) {
+	int nIntersected = 0;
+
+	if (m_pMesh){
+		DirectX::XMFLOAT3 xmf3_Pick_Ray_Position, xmf3_Pick_Ray_Direction;
+		Generate_Ray_4_Picking(xmf3_Pick_Position, xmf4x4_View, &xmf3_Pick_Ray_Position, &xmf3_Pick_Ray_Direction);
+
+		nIntersected = m_pMesh->Chk_Ray_Intersection(xmf3_Pick_Ray_Position, xmf3_Pick_Ray_Direction, pfHit_Distance);
+	}
+	else {
+		DirectX::XMFLOAT3 xmf3_Pick_Ray_Position, xmf3_Pick_Ray_Direction;
+		Generate_Ray_4_Picking(xmf3_Pick_Position, xmf4x4_View, &xmf3_Pick_Ray_Position, &xmf3_Pick_Ray_Direction);
+
+		nIntersected = pMesh->Chk_Ray_Intersection(xmf3_Pick_Ray_Position, xmf3_Pick_Ray_Direction, pfHit_Distance);
+	}
+
+	return nIntersected;
+}
+
 //
 CRotating_Object::CRotating_Object() {
 	m_xmf3_Rotation_Axis = DirectX::XMFLOAT3(0.0f, 1.0f, 0.0f);

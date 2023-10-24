@@ -31,6 +31,6 @@ public :
 	void Reset();
 	void Tick(float fLock_FPS = 0.0f);
 	unsigned long Get_FrameRate(LPTSTR lpszString = NULL, int nCharacters = 0);
-	float Get_Elapsed_Time() { return m_fElapsed_Time; }	// warning : timer has bug
+	float Get_Elapsed_Time() { return m_fElapsed_Time; }
 };
 

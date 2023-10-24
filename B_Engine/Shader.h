@@ -107,6 +107,9 @@ public :
 
 	virtual void Anim_Objects(float fElapsed_Time);
 	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, CCamera* pCamera);
+
+	//
+	virtual CObject* Pick_Object_By_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, float* pfNear_Hit_Distance);
 };
 
 //

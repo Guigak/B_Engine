@@ -66,6 +66,9 @@ private :
 	// Camera
 	CCamera* m_pCamera = NULL;
 
+	// picking
+	CObject* m_pSelected_Object = NULL;
+
 public :
 	CFramework();
 	~CFramework();
@@ -109,5 +112,8 @@ public :
 
 	// mouse point
 	POINT m_ptOld_Cursor_Pos;
+
+	// picking
+	void Prcs_Selected_Object(DWORD dwDirection, float fDelta_x, float fDelta_y);
 };
 

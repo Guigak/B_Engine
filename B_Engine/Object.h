@@ -36,6 +36,9 @@ public :
 	virtual void Set_Mesh(CMesh* pMesh);
 	virtual void Set_Shader(CShader* pShader);
 
+	//
+	virtual CMesh* Get_Mesh() { return m_pMesh; }
+
 	virtual void Anim(float fElapsed_Time);
 
 	virtual void Prepare_Render();
@@ -65,6 +68,10 @@ public :
 
 	//
 	virtual DirectX::XMFLOAT4X4 Get_World_Matrix() { return m_xmf4x4_World; };
+
+	//
+	void Generate_Ray_4_Picking(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, DirectX::XMFLOAT3* pxmf3_Pick_Ray_Position, DirectX::XMFLOAT3* pxmf3_Pick_Ray_Direction);
+	int Pick_Object_By_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Pick_Position, DirectX::XMFLOAT4X4& xmf4x4_View, float* pfHit_Distance, CMesh* pMesh = NULL);
 };
 
 class CRotating_Object : public CObject {

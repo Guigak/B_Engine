@@ -62,6 +62,13 @@ protected :
 	UINT m_nStart_Index = 0;
 	UINT m_nBase_Vertex = 0;
 
+	//
+	DirectX::BoundingOrientedBox m_xmOOBB;
+
+	//
+	CDiffused_Vertex* m_pVertices = NULL;
+	UINT* m_pnIndices = NULL;
+
 public :
 	CMesh() = default;
 	CMesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List);
@@ -81,6 +88,12 @@ public :
 public :
 	//virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List);
 	virtual void Render(ID3D12GraphicsCommandList* pd3d_Command_List, UINT nInstances = 1);
+
+	//
+	DirectX::BoundingOrientedBox Get_OOBB() { return m_xmOOBB; }
+
+	//
+	int Chk_Ray_Intersection(DirectX::XMFLOAT3& xmf3_Ray_Position, DirectX::XMFLOAT3& xmf3_Ray_Direction, float* pfNear_Hit_Distance);
 };
 
 class CTriangle_Mesh : public CMesh {
@@ -100,4 +113,11 @@ class CAirPlane_Mesh : public CMesh {
 public:
 	CAirPlane_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fWidth = 20.0f, float fHeight = 20.0f, float fDepth = 4.0f, DirectX::XMFLOAT4 xmf4_Color = DirectX::XMFLOAT4(1.0f, 1.0f, 0.0f, 0.0f));
 	virtual ~CAirPlane_Mesh();
+};
+
+//
+class CSphere_Mesh : public CMesh {
+public :
+	CSphere_Mesh(ID3D12Device* pd3d_Device, ID3D12GraphicsCommandList* pd3d_Command_List, float fRadius = 2.0f, int nSlices = 20, int nStacks = 20);
+	virtual ~CSphere_Mesh();
 };
